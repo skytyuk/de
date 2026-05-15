@@ -1,0 +1,48 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Мои курсы{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>Мои курсы</h1>
+                <p class="meta">Курсы, на которые вы зачислены.</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_user:courses' %}">Найти курс</a>
+        </section>
+
+        <section class="course-grid">
+            {% for enrollment in enrollments %}
+                <article class="card course-card">
+                    <div>
+                        <div class="course-title-line">
+                            <h2>{{ enrollment.course.title }}</h2>
+                            <span class="course-status-badge is-static">Обучение</span>
+                        </div>
+                        <p class="course-description">{{ enrollment.course.description|default:"Описание курса пока не добавлено." }}</p>
+                    </div>
+                    <div class="course-meta">
+                        {% if enrollment.lesson_duration_minutes %}
+                            <span>Занятие: {{ enrollment.lesson_duration_minutes }} мин.</span>
+                        {% endif %}
+                        {% if enrollment.group %}
+                            <span>Группа: {{ enrollment.group.name }}</span>
+                        {% endif %}
+                    </div>
+                    <a class="button-link" href="{% url 'role_user:my_course_detail' enrollment.course.id %}">Открыть курс</a>
+                </article>
+            {% empty %}
+                <div class="card user-empty">
+                    <p>Вы пока не зачислены ни на один курс.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+{% endblock %}

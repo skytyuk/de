@@ -1,0 +1,139 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Профиль{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/pages_main/profile.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="card profile-card">
+        <div class="profile-header">
+            <div class="profile-heading">
+                <h1>Личная информация</h1>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="profile-form" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_profile">
+
+            <div class="profile-grid">
+                <div class="profile-item profile-field form-field{% if profile_form.last_name.errors %} has-error{% endif %}">
+                    {{ profile_form.last_name.label_tag }}
+                    {{ profile_form.last_name }}
+                    {{ profile_form.last_name.errors }}
+                </div>
+
+                <div class="profile-item profile-field form-field{% if profile_form.first_name.errors %} has-error{% endif %}">
+                    {{ profile_form.first_name.label_tag }}
+                    {{ profile_form.first_name }}
+                    {{ profile_form.first_name.errors }}
+                </div>
+
+                <div class="profile-item profile-field form-field{% if profile_form.middle_name.errors %} has-error{% endif %}">
+                    {{ profile_form.middle_name.label_tag }}
+                    {{ profile_form.middle_name }}
+                    {{ profile_form.middle_name.errors }}
+                </div>
+
+                <div class="profile-item profile-field form-field{% if profile_form.email.errors %} has-error{% endif %}">
+                    {{ profile_form.email.label_tag }}
+                    {{ profile_form.email }}
+                    {{ profile_form.email.errors }}
+                </div>
+
+                <div class="profile-item profile-field form-field{% if profile_form.phone.errors %} has-error{% endif %}">
+                    {{ profile_form.phone.label_tag }}
+                    {{ profile_form.phone }}
+                    {{ profile_form.phone.errors }}
+                </div>
+
+                <div class="profile-item profile-photo-item form-field">
+                    <div class="profile-field profile-upload-field{% if profile_form.image.errors %} has-error{% endif %}">
+                        {{ profile_form.image.label_tag }}
+                        {{ profile_form.image }}
+                        {{ profile_form.image.errors }}
+                    </div>
+                </div>
+            </div>
+
+        </form>
+
+        <div class="profile-footer-actions">
+            <a class="button-link" href="{% url 'main:index' %}">На главную</a>
+            <a class="button-link" href="{% url 'main:logout' %}">Выйти</a>
+            <button class="button-link" type="submit" form="profile-form">Сохранить</button>
+            <button class="button-link" type="button" data-password-open>Изменить пароль</button>
+            <button class="button-link danger-button" type="button" data-delete-open>Удалить аккаунт</button>
+        </div>
+    </div>
+
+    <div class="profile-modal{% if password_modal_open %} is-open{% endif %}" data-password-modal>
+        <div class="profile-modal-backdrop" data-password-close></div>
+        <div class="profile-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="password-modal-title">
+            <div class="profile-modal-header">
+                <h2 id="password-modal-title">Изменить пароль</h2>
+            </div>
+            <form method="post" id="password-form" novalidate{% if password_form.non_field_errors %} data-has-password-group-error="true"{% endif %}>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="change_password">
+                {% for field in password_form %}
+                    <div class="form-field{% if field.errors or password_form.non_field_errors %} has-error{% endif %}">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.name == "new_password" %}
+                            <ul class="password-rules" id="profile-password-rules">
+                                <li data-rule="length">Минимум 8 символов</li>
+                                <li data-rule="lower">Хотя бы одна строчная буква</li>
+                                <li data-rule="upper">Хотя бы одна заглавная буква</li>
+                                <li data-rule="digit">Хотя бы одна цифра</li>
+                                <li data-rule="special">Хотя бы один спецсимвол</li>
+                            </ul>
+                        {% endif %}
+                        {% if field.name != "new_password" %}
+                            {{ field.errors }}
+                        {% elif field.errors %}
+                            {{ field.errors }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if password_form.non_field_errors %}
+                    <ul class="errorlist nonfield-errors password-group-error" data-password-group-error>
+                        {% for error in password_form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <div class="profile-actions">
+                    <button class="button-link" type="submit">Сменить пароль</button>
+                    <button class="button-link light" type="button" data-password-close>Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="profile-modal" data-delete-modal>
+        <div class="profile-modal-backdrop" data-delete-close></div>
+        <div class="profile-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+            <div class="profile-modal-header">
+                <h2 id="delete-modal-title">Подтвердите удаление</h2>
+            </div>
+            <form method="post" id="delete-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_account">
+                <p class="delete-warning">Аккаунт будет удален безвозвратно. Вы потеряете доступ к курсам и материалам. Точно хотите удалить аккаунт?</p>
+                <div class="profile-actions">
+                    <button class="button-link danger-button" type="submit">Удалить</button>
+                    <button class="button-link light" type="button" data-delete-close>Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{% static 'js/pages_main/profile.js' %}?v={{ asset_version }}" defer></script>
+{% endblock %}

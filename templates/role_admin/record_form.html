@@ -1,0 +1,33 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_width %}page-medium{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>{{ title }}</h1>
+                <p class="meta">{{ model_verbose }}</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_admin:table_detail' model_name %}{% if return_query %}?{{ return_query }}{% endif %}">Назад</a>
+        </section>
+
+        <section class="card admin-panel">
+            <form class="admin-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="next_query" value="{{ return_query }}">
+                {{ form.as_p }}
+                <div class="admin-form-actions">
+                    <button class="button-link" type="submit">Сохранить</button>
+                    <a class="button-link light" href="{% url 'role_admin:table_detail' model_name %}{% if return_query %}?{{ return_query }}{% endif %}">Отмена</a>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

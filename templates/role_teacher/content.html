@@ -1,0 +1,426 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Материалы курса{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Материалы, задания и тесты</h1>
+            </div>
+            <a class="button-link light" href="{% url 'role_teacher:submissions' %}">Проверка</a>
+        </section>
+
+        {% if error %}<p class="teacher-error">{{ error }}</p>{% endif %}
+
+        <nav class="teacher-tabs" id="teacher-content-workspace">
+            {% for tab in mode_tabs %}
+                <a class="button-link light{% if tab.active %} is-active{% endif %}" href="{{ tab.url }}" data-preserve-scroll>{{ tab.title }}</a>
+            {% endfor %}
+        </nav>
+
+        <section class="card teacher-panel">
+            <h2>Фильтр</h2>
+            <form class="teacher-form teacher-filter-form" method="get" action="{% url 'role_teacher:content' %}#teacher-content-workspace">
+                <input type="hidden" name="mode" value="{{ mode }}">
+                <div class="form-field">
+                    <label for="teacher-course-filter">Курс</label>
+                    <select id="teacher-course-filter" name="course">
+                        <option value="">Все курсы</option>
+                        {% for course in courses %}
+                            <option value="{{ course.id }}"{% if selected_course and selected_course.id == course.id %} selected{% endif %}>{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="button-link" type="submit">Показать</button>
+            </form>
+
+            {% if selected_course %}
+                <details class="teacher-filter-block teacher-filter-details"{% if selected_module %} open{% endif %}>
+                    <summary>Модули курса</summary>
+                    <div class="teacher-filter-list">
+                        <a class="{% if not selected_module %}is-selected{% endif %}" href="{% url 'role_teacher:content' %}?mode={{ mode }}&course={{ selected_course.id }}#teacher-content-workspace" data-preserve-scroll>Все модули</a>
+                        {% for module in modules %}
+                            <a class="{% if selected_module and selected_module.id == module.id %}is-selected{% endif %}" href="{% url 'role_teacher:content' %}?mode={{ mode }}&course={{ selected_course.id }}&module={{ module.id }}#teacher-content-workspace" data-preserve-scroll>{{ module.sort_order }}. {{ module.title }}</a>
+                        {% empty %}
+                            <span>Модули пока не добавлены.</span>
+                        {% endfor %}
+                    </div>
+                </details>
+
+                <div class="teacher-filter-block">
+                    <h3>Занятия</h3>
+                    <div class="teacher-lesson-list">
+                        <a class="{% if not selected_lesson %}is-selected{% endif %}" href="{% url 'role_teacher:content' %}?mode={{ mode }}&course={{ selected_course.id }}{% if selected_module %}&module={{ selected_module.id }}{% endif %}#teacher-content-workspace" data-preserve-scroll>Все занятия</a>
+                        {% for lesson in lessons %}
+                            <a class="{% if selected_lesson and selected_lesson.id == lesson.id %}is-selected{% endif %}" href="{% url 'role_teacher:content' %}?mode={{ mode }}&course={{ lesson.module.course.id }}&module={{ lesson.module.id }}&lesson={{ lesson.id }}#teacher-content-workspace" data-preserve-scroll>
+                                <span>{{ lesson.module.title }}</span>
+                                <strong>{{ lesson.sort_order }}. {{ lesson.title }}</strong>
+                            </a>
+                        {% empty %}
+                            <span>Нет занятий.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        {% if mode == "materials" %}
+            <section class="card teacher-panel">
+                <div class="teacher-section-title">
+                    <div>
+                        <h2>Материалы</h2>
+                    </div>
+                    {% if selected_lesson %}
+                        <button class="button-link" type="button" data-open-modal="add-material-modal">Добавить материал</button>
+                    {% endif %}
+                </div>
+                <div class="teacher-content-list">
+                    {% for material in content_items %}
+                        <article class="teacher-content-card">
+                            <div>
+                                <h3>{{ material.title }}</h3>
+                                <p class="meta">{{ material.lesson.module.course.title }} · {{ material.lesson.module.title }}</p>
+                                <p class="meta">{{ material.description|default:"Описание не заполнено." }}</p>
+                                <div class="teacher-resource-actions">
+                                    {% if material.file %}<a href="{{ material.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file.url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>{% endif %}
+                                    {% if material.file_url %}<a href="{{ material.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file_url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>{% endif %}
+                                </div>
+                            </div>
+                            <div class="teacher-row-actions">
+                                <button class="button-link light" type="button" data-open-modal="edit-material-{{ material.id }}">Изменить</button>
+                                <button class="button-link light" type="button" data-open-modal="delete-material-{{ material.id }}">Удалить</button>
+                            </div>
+                        </article>
+
+                        <dialog class="teacher-modal" id="edit-material-{{ material.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_material">
+                                <input type="hidden" name="material_id" value="{{ material.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ material.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ material.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ material.lesson.id }}">
+                                <h2>Изменить материал</h2>
+                                <div class="form-field"><label>Наименование</label><input name="title" value="{{ material.title }}" required></div>
+                                <div class="form-field"><label>Описание</label><textarea name="description" rows="3">{{ material.description }}</textarea></div>
+                                <div class="form-field">
+                                    <label>Тип материала</label>
+                                    <select name="material_type">
+                                        {% for value, label in material_type_choices %}
+                                            <option value="{{ value }}"{% if material.material_type == value %} selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-field"><label>Ссылка</label><input name="file_url" type="url" value="{{ material.file_url }}"></div>
+                                <div class="form-field"><label>Файл</label><input name="file" type="file"></div>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link" type="submit">Сохранить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                        <dialog class="teacher-modal" id="delete-material-{{ material.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_material">
+                                <input type="hidden" name="material_id" value="{{ material.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ material.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ material.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ material.lesson.id }}">
+                                <h2>Удалить материал</h2>
+                                <p class="meta">Материал "{{ material.title }}" будет удален безвозвратно.</p>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link danger-button" type="submit">Удалить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    {% empty %}
+                        <p class="meta">Пусто.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if selected_lesson %}
+                <dialog class="teacher-modal" id="add-material-modal">
+                    <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_material">
+                        <input type="hidden" name="mode" value="{{ mode }}">
+                        <input type="hidden" name="course" value="{{ selected_course.id }}">
+                        <input type="hidden" name="module" value="{{ selected_module.id }}">
+                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
+                        <h2>Добавить материал</h2>
+                        <div class="form-field"><label for="material-title">Наименование</label><input id="material-title" name="title" required></div>
+                        <div class="form-field"><label for="material-description">Описание</label><textarea id="material-description" name="description" rows="4"></textarea></div>
+                        <div class="form-field">
+                            <label for="material-type">Тип материала</label>
+                            <select id="material-type" name="material_type">
+                                {% for value, label in material_type_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-field"><label for="material-url">Ссылка</label><input id="material-url" name="file_url" type="url"></div>
+                        <div class="form-field"><label for="material-file">Файл</label><input id="material-file" name="file" type="file"></div>
+                        <div class="teacher-form-actions">
+                            <button class="button-link" type="submit">Добавить</button>
+                            <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                        </div>
+                    </form>
+                </dialog>
+            {% endif %}
+        {% elif mode == "assignments" %}
+            <section class="card teacher-panel">
+                <div class="teacher-section-title">
+                    <div>
+                        <h2>Задания</h2>
+                    </div>
+                    {% if selected_lesson %}
+                        <button class="button-link" type="button" data-open-modal="add-assignment-modal">Добавить задание</button>
+                    {% endif %}
+                </div>
+                <div class="teacher-content-list">
+                    {% for assignment in content_items %}
+                        <article class="teacher-content-card">
+                            <div>
+                                <h3>{{ assignment.title }}</h3>
+                                <p class="meta">{{ assignment.lesson.module.course.title }} · {{ assignment.lesson.module.title }}</p>
+                                <p class="meta">{{ assignment.description|default:"Описание не заполнено." }}</p>
+                                <p class="meta">Максимальный балл: {{ assignment.max_score }}</p>
+                                <div class="teacher-resource-actions">
+                                    {% if assignment.file %}<a href="{{ assignment.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file.url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
+                                    {% if assignment.file_url %}<a href="{{ assignment.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file_url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                </div>
+                            </div>
+                            <div class="teacher-row-actions">
+                                <button class="button-link light" type="button" data-open-modal="edit-assignment-{{ assignment.id }}">Изменить</button>
+                                <button class="button-link light" type="button" data-open-modal="delete-assignment-{{ assignment.id }}">Удалить</button>
+                            </div>
+                        </article>
+
+                        <dialog class="teacher-modal" id="edit-assignment-{{ assignment.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_assignment">
+                                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ assignment.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ assignment.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ assignment.lesson.id }}">
+                                <h2>Изменить задание</h2>
+                                <div class="form-field"><label>Наименование</label><input name="title" value="{{ assignment.title }}" required></div>
+                                <div class="form-field"><label>Описание</label><textarea name="description" rows="3">{{ assignment.description }}</textarea></div>
+                                <div class="form-field"><label>Максимальный балл</label><input name="max_score" type="number" min="1" value="{{ assignment.max_score }}"></div>
+                                <div class="form-field"><label>Ссылка</label><input name="file_url" type="url" value="{{ assignment.file_url }}"></div>
+                                <div class="form-field"><label>Файл</label><input name="file" type="file"></div>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link" type="submit">Сохранить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                        <dialog class="teacher-modal" id="delete-assignment-{{ assignment.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_assignment">
+                                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ assignment.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ assignment.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ assignment.lesson.id }}">
+                                <h2>Удалить задание</h2>
+                                <p class="meta">Задание "{{ assignment.title }}" будет удалено безвозвратно.</p>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link danger-button" type="submit">Удалить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    {% empty %}
+                        <p class="meta">Нет заданий.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if selected_lesson %}
+                <dialog class="teacher-modal" id="add-assignment-modal">
+                    <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_assignment">
+                        <input type="hidden" name="mode" value="{{ mode }}">
+                        <input type="hidden" name="course" value="{{ selected_course.id }}">
+                        <input type="hidden" name="module" value="{{ selected_module.id }}">
+                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
+                        <h2>Добавить задание</h2>
+                        <div class="form-field"><label for="assignment-title">Наименование</label><input id="assignment-title" name="title" required></div>
+                        <div class="form-field"><label for="assignment-description">Описание</label><textarea id="assignment-description" name="description" rows="4"></textarea></div>
+                        <div class="form-field"><label for="assignment-score">Максимальный балл</label><input id="assignment-score" name="max_score" type="number" min="1" value="100"></div>
+                        <div class="form-field"><label for="assignment-url">Ссылка</label><input id="assignment-url" name="file_url" type="url"></div>
+                        <div class="form-field"><label for="assignment-file">Файл</label><input id="assignment-file" name="file" type="file"></div>
+                        <div class="teacher-form-actions">
+                            <button class="button-link" type="submit">Добавить</button>
+                            <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                        </div>
+                    </form>
+                </dialog>
+            {% endif %}
+        {% else %}
+            <section class="card teacher-panel">
+                <div class="teacher-section-title">
+                    <div>
+                        <h2>Тесты</h2>
+                    </div>
+                    {% if selected_lesson %}
+                        <button class="button-link" type="button" data-open-modal="add-test-modal">Добавить тест</button>
+                    {% endif %}
+                </div>
+                <div class="teacher-content-list">
+                    {% for test in content_items %}
+                        <article class="teacher-content-card">
+                            <div>
+                                <h3>{{ test.title }}</h3>
+                                <p class="meta">{{ test.lesson.module.course.title }} · {{ test.lesson.module.title }}</p>
+                                <p class="meta">{{ test.description|default:"Описание не заполнено." }}</p>
+                                <p class="meta">Проходной балл: {{ test.passing_score }} · Попыток: {{ test.max_attempts }}</p>
+                            </div>
+                            <div class="teacher-row-actions">
+                                <button class="button-link light" type="button" data-open-modal="edit-test-{{ test.id }}">Изменить</button>
+                                <button class="button-link light" type="button" data-open-modal="delete-test-{{ test.id }}">Удалить</button>
+                            </div>
+                        </article>
+
+                        <dialog class="teacher-modal" id="edit-test-{{ test.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_test">
+                                <input type="hidden" name="test_id" value="{{ test.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ test.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ test.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ test.lesson.id }}">
+                                <h2>Изменить тест</h2>
+                                <div class="form-field"><label>Наименование</label><input name="title" value="{{ test.title }}" required></div>
+                                <div class="form-field"><label>Описание</label><textarea name="description" rows="3">{{ test.description }}</textarea></div>
+                                <div class="form-field"><label>Проходной балл</label><input name="passing_score" type="number" min="1" max="100" value="{{ test.passing_score }}"></div>
+                                <div class="form-field"><label>Попыток</label><input name="max_attempts" type="number" min="1" value="{{ test.max_attempts }}"></div>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link" type="submit">Сохранить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                        <dialog class="teacher-modal" id="delete-test-{{ test.id }}">
+                            <form class="teacher-form teacher-modal-body" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_test">
+                                <input type="hidden" name="test_id" value="{{ test.id }}">
+                                <input type="hidden" name="mode" value="{{ mode }}">
+                                <input type="hidden" name="course" value="{{ test.lesson.module.course.id }}">
+                                <input type="hidden" name="module" value="{{ test.lesson.module.id }}">
+                                <input type="hidden" name="lesson" value="{{ test.lesson.id }}">
+                                <h2>Удалить тест</h2>
+                                <p class="meta">Тест "{{ test.title }}" будет удален безвозвратно.</p>
+                                <div class="teacher-form-actions">
+                                    <button class="button-link danger-button" type="submit">Удалить</button>
+                                    <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    {% empty %}
+                        <p class="meta">Нет тестов.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if selected_lesson %}
+                <dialog class="teacher-modal" id="add-test-modal">
+                    <form class="teacher-form teacher-modal-body" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_test">
+                        <input type="hidden" name="mode" value="{{ mode }}">
+                        <input type="hidden" name="course" value="{{ selected_course.id }}">
+                        <input type="hidden" name="module" value="{{ selected_module.id }}">
+                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
+                        <h2>Добавить тест</h2>
+                        <div class="form-field"><label for="test-title">Наименование</label><input id="test-title" name="title" required></div>
+                        <div class="form-field"><label for="test-description">Описание</label><textarea id="test-description" name="description" rows="4"></textarea></div>
+                        <div class="form-field"><label for="test-question">Вопрос</label><input id="test-question" name="question"></div>
+                        <div class="form-field"><label for="test-correct">Верный ответ</label><input id="test-correct" name="correct_answer"></div>
+                        <div class="form-field"><label for="test-wrong">Неверный ответ</label><input id="test-wrong" name="wrong_answer"></div>
+                        <div class="teacher-form-actions">
+                            <button class="button-link" type="submit">Добавить</button>
+                            <button class="button-link light" type="button" data-close-modal>Отмена</button>
+                        </div>
+                    </form>
+                </dialog>
+            {% endif %}
+        {% endif %}
+
+        {% if selected_lesson %}
+            <section class="card teacher-panel">
+                <h2>Комментарии студентов</h2>
+                <div class="teacher-list">
+                    {% for comment in selected_lesson.comments.all %}
+                        <form class="teacher-comment-reply" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reply_comment">
+                            <input type="hidden" name="mode" value="{{ mode }}">
+                            <input type="hidden" name="course" value="{{ selected_course.id }}">
+                            <input type="hidden" name="module" value="{{ selected_module.id }}">
+                            <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
+                            <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                            <p>{{ comment.user }}: {{ comment.text }}</p>
+                            <input name="text" placeholder="Ответить студенту">
+                            <button class="button-link light" type="submit">Ответить</button>
+                        </form>
+                    {% empty %}
+                        <p class="meta">Комментариев пока нет.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+
+    <script>
+        (() => {
+            const scrollKey = "teacher-content-scroll-y";
+            const saveScroll = () => sessionStorage.setItem(scrollKey, String(window.scrollY));
+            document.querySelectorAll("[data-preserve-scroll]").forEach((element) => {
+                element.addEventListener("click", saveScroll);
+            });
+            document.querySelectorAll(".teacher-page form").forEach((form) => {
+                form.addEventListener("submit", saveScroll);
+            });
+            const savedScroll = sessionStorage.getItem(scrollKey);
+            if (savedScroll !== null) {
+                requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll)));
+                sessionStorage.removeItem(scrollKey);
+            }
+
+            document.querySelectorAll("[data-open-modal]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const modal = document.getElementById(button.dataset.openModal);
+                    if (modal) modal.showModal();
+                });
+            });
+            document.querySelectorAll("[data-close-modal]").forEach((button) => {
+                button.addEventListener("click", () => button.closest("dialog")?.close());
+            });
+            document.querySelectorAll(".teacher-modal").forEach((modal) => {
+                modal.addEventListener("click", (event) => {
+                    if (event.target === modal) modal.close();
+                });
+            });
+        })();
+    </script>
+{% endblock %}

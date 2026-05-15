@@ -1,0 +1,72 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Заявки на курсы{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Заявки на курсы</h1>
+                <p class="meta">Здесь админ принимает заявку, выбирает учебную группу и зачисляет студента.</p>
+            </div>
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:education' %}">Учебный процесс</a>
+                <a class="button-link light" href="{% url 'role_admin:dashboard' %}">Админ</a>
+            </div>
+        </section>
+
+        {% if notice %}<p class="admin-notice">{{ notice }}</p>{% endif %}
+        {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+
+        <section class="admin-application-list">
+            {% for application in applications %}
+                <article class="card admin-application-card">
+                    <div>
+                        <h2>{{ application.course.title }}</h2>
+                        <p class="meta">{{ application.student }} · {{ application.student.email }}</p>
+                        <p class="meta">Статус: {{ application.get_status_display }} · {{ application.updated_at|date:"d.m.Y H:i" }}</p>
+                        {% if application.comment %}
+                            <p class="meta">Комментарий: {{ application.comment }}</p>
+                        {% endif %}
+                    </div>
+                    <form class="admin-application-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="application_id" value="{{ application.id }}">
+                        <div class="form-field">
+                            <label for="status-{{ application.id }}">Статус</label>
+                            <select id="status-{{ application.id }}" name="status">
+                                {% for value, label in statuses %}
+                                    <option value="{{ value }}"{% if application.status == value %} selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="group-{{ application.id }}">Группа для зачисления</label>
+                            <select id="group-{{ application.id }}" name="group">
+                                <option value="">Без группы</option>
+                                {% for group in application.course.groups.all %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="comment-{{ application.id }}">Комментарий</label>
+                            <textarea id="comment-{{ application.id }}" name="comment" rows="3">{{ application.comment|default_if_none:"" }}</textarea>
+                        </div>
+                        <button class="button-link" type="submit">Сохранить</button>
+                    </form>
+                </article>
+            {% empty %}
+                <div class="card admin-panel">
+                    <p class="meta">Заявок пока нет.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+{% endblock %}

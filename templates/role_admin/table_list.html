@@ -1,0 +1,56 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Таблицы{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Таблицы</h1>
+                <p class="meta">База данных: {{ database_name }}</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_admin:dashboard' %}" data-history-back data-fallback-url="{% url 'role_admin:dashboard' %}">Назад</a>
+        </section>
+
+        <form class="admin-search-form card" method="get">
+            <div class="form-field">
+                <label for="table-search">Поиск таблицы</label>
+                <input id="table-search" name="q" type="search" value="{{ search_query }}" placeholder="Название таблицы">
+            </div>
+            <div class="admin-row-actions">
+                <button class="button-link" type="submit">Найти</button>
+                <a class="button-link light" href="{% url 'role_admin:table_list' %}">Сбросить</a>
+            </div>
+        </form>
+
+        <section class="admin-table-list">
+            {% for table in tables %}
+                <article class="admin-table-card">
+                    <div>
+                        <h2>{{ table.verbose_name }}</h2>
+                        <p class="meta">{{ table.db_table }} · {{ table.count }} записей</p>
+                        <p class="meta">{{ table.description }}</p>
+                    </div>
+                    <div class="admin-row-actions">
+                        <a class="button-link light" href="{% url 'role_admin:table_detail' table.model_name %}" data-preserve-page-state>Открыть</a>
+                        <a class="button-link light" href="{% url 'role_admin:export_table_json' table.model_name %}">JSON</a>
+                        <a class="button-link light" href="{% url 'role_admin:export_table_csv' table.model_name %}">CSV</a>
+                    </div>
+                </article>
+            {% empty %}
+                <article class="admin-table-card">
+                    <div>
+                        <h2>Ничего не найдено</h2>
+                        <p class="meta">Попробуйте изменить поисковый запрос.</p>
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    </div>
+{% endblock %}

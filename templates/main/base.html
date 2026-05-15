@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AE{% endblock %}</title>
+    <script>
+        (() => {
+            const storageKey = "sae:theme";
+            const root = document.documentElement;
+
+            try {
+                const theme = localStorage.getItem(storageKey) === "dark" ? "dark" : "light";
+                root.classList.add(theme);
+            } catch (error) {
+                root.classList.add("light");
+            }
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v={{ asset_version }}">
+    {% block page_styles %}{% endblock %}
+</head>
+<body{% if current_user %} data-notification-counts-url="{% url 'main:notification_counts' %}"{% endif %}>
+    <header class="site-header">
+        <div class="header-container header-inner">
+            <a href="{% url 'main:index' %}" class="brand">
+                <span class="brand-mark">
+                    <img src="{% static 'images/logo.png' %}" alt="Логотип AE">
+                </span>
+                <span>AE</span>
+            </a>
+            <div class="header-navigation" data-header-navigation>
+                <button class="header-menu-toggle" type="button" aria-label="Открыть меню" aria-expanded="false" data-header-menu-toggle>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            <div class="header-actions" data-header-menu>
+                <button class="theme-toggle" type="button" aria-label="Сменить тему" data-theme-toggle>
+                    <svg class="theme-icon theme-icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                        </g>
+                    </svg>
+                    <svg class="theme-icon theme-icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3a6 6 0 0 0 9 9a9 9 0 1 1-9-9"></path>
+                    </svg>
+                </button>
+                <a class="button-link light" href="{% url 'main:index' %}">Главная</a>
+                {% if not current_user or is_student %}
+                    <a class="button-link light" href="{% url 'role_user:courses' %}">Курсы</a>
+                {% endif %}
+                {% if current_user %}
+                    {% if is_student %}
+                        <a class="button-link light notification-link" href="{% url 'role_user:notifications' %}">
+                            <span>Уведомления</span>
+                            <span class="notification-badge" data-notification-badge{% if not notification_unread_count %} hidden{% endif %}>{{ notification_unread_count }}</span>
+                        </a>
+                    {% endif %}
+                    {% if is_admin %}
+                        <a class="button-link light" href="{% url 'role_admin:dashboard' %}">Админка</a>
+                        <a class="button-link light" href="{% url 'role_admin:education' %}">Учебный процесс</a>
+                        <a class="button-link light" href="{% url 'role_admin:applications' %}">Заявки</a>
+                        <a class="button-link light" href="{% url 'role_admin:schedule' %}">Расписание</a>
+                        <a class="button-link light notification-link" href="{% url 'role_admin:notifications' %}">
+                            <span>Уведомления</span>
+                            <span class="notification-badge" data-notification-badge{% if not notification_unread_count %} hidden{% endif %}>{{ notification_unread_count }}</span>
+                        </a>
+                    {% endif %}
+                    {% if is_teacher %}
+                        <a class="button-link light" href="{% url 'role_teacher:dashboard' %}">Кабинет</a>
+                        <a class="button-link light" href="{% url 'role_teacher:groups' %}">Организация УП</a>
+                        <a class="button-link light" href="{% url 'role_teacher:content' %}">Управление УП</a>
+                        <a class="button-link light notification-link" href="{% url 'role_teacher:notifications' %}">
+                            <span>Уведомления</span>
+                            <span class="notification-badge" data-notification-badge{% if not notification_unread_count %} hidden{% endif %}>{{ notification_unread_count }}</span>
+                        </a>
+                    {% endif %}
+                    <a class="button-link avatar-link{% if not current_user.image %} default-avatar-link{% endif %}" href="{% url 'main:profile' %}" aria-label="Мой профиль">
+                        {% if current_user.image %}
+                            <img src="{{ current_user.image.url }}" alt="Аватар пользователя">
+                        {% else %}
+                            <img class="default-avatar-image default-avatar-light" src="{% static 'images/default_profile.png' %}" alt="Аватар по умолчанию">
+                            <img class="default-avatar-image default-avatar-dark" src="{% static 'images/default_profile2.png' %}" alt="Аватар по умолчанию">
+                        {% endif %}
+                    </a>
+                {% else %}
+                    <a class="button-link" href="{% url 'main:login' %}" aria-label="Войти">Войти</a>
+                {% endif %}
+            </div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="page-container {% block page_width %}page-medium{% endblock %}">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-container footer-inner">
+            <p class="footer-brand">
+                <span class="footer-brand-mark">
+                    <img src="{% static 'images/logo.png' %}" alt="Логотип AE">
+                </span>
+                <span>Additional Education</span>
+            </p>
+            <p>Сайт дополнительного образования.</p>
+        </div>
+    </footer>
+    <div class="cookie-modal" data-cookie-modal hidden>
+        <div class="cookie-modal-backdrop"></div>
+        <div class="cookie-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cookie-modal-title">
+            <h2 id="cookie-modal-title">Файлы cookie</h2>
+            <p>Мы используем файлы cookie, чтобы обеспечивать правильную работу нашего веб-сайта. Соглашаясь на использование файлов cookie, вы осуществляете контроль за своими данными и можете в любой момент изменить или отозвать свое согласие.</p>
+            <div class="cookie-modal-actions">
+                <button class="button-link light" type="button" data-cookie-choice="rejected">Я отказываюсь</button>
+                <button class="button-link" type="button" data-cookie-choice="accepted">Я соглашаюсь</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/shared/form-utils.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/theme-switcher.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/header-menu.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/cookie-consent.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/page-state.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/notification-badges.js' %}?v={{ asset_version }}" defer></script>
+    <script src="{% static 'js/shared/resource-preview.js' %}?v={{ asset_version }}" defer></script>
+    {% block page_scripts %}{% endblock %}
+</body>
+</html>

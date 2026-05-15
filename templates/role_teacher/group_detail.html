@@ -1,0 +1,82 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ group.name }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>{{ group.name }}</h1>
+            </div>
+            <a class="button-link light" href="{% url 'role_teacher:groups' %}?course={{ group.course.id }}">Мои группы</a>
+        </section>
+
+        <section class="card teacher-panel">
+            <div class="teacher-section-title">
+                <div>
+                    <h2>Журнал посещаемости</h2>
+                </div>
+                <span class="teacher-small-badge">{{ group.course.title }}</span>
+            </div>
+
+            {% if schedules and enrollments %}
+                <form class="teacher-attendance-grid-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_attendance_grid">
+                    <div class="teacher-data-wrap">
+                        <table class="teacher-data-table teacher-attendance-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="teacher-sticky-col">Студент</th>
+                                    {% for module in module_headers %}
+                                        <th colspan="{{ module.colspan }}" class="teacher-module-head">{{ module.title }}</th>
+                                    {% endfor %}
+                                </tr>
+                                <tr>
+                                    {% for schedule in schedules %}
+                                        <th>
+                                            <span>{{ schedule.lesson.title|default:"Занятие" }}</span>
+                                            <small>{{ schedule.start_at|date:"d.m H:i" }}</small>
+                                        </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in enrollments %}
+                                    <tr>
+                                        <td class="teacher-sticky-col">
+                                            <strong>{{ enrollment.student }}</strong>
+                                            <small>{{ enrollment.student.email }}</small>
+                                        </td>
+                                        {% for cell in enrollment.attendance_cells %}
+                                            <td>
+                                                <select name="student_{{ enrollment.student.id }}_{{ cell.schedule.id }}" aria-label="Посещаемость {{ enrollment.student }} {{ cell.schedule.lesson.title }}">
+                                                    {% for value, label in attendance_statuses %}
+                                                        <option value="{{ value }}"{% if cell.status == value %} selected{% endif %}>{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="teacher-form-actions teacher-attendance-actions">
+                        <button class="button-link" type="submit">Сохранить журнал</button>
+                    </div>
+                </form>
+            {% elif not enrollments %}
+                <p class="meta">В группе пока нет студентов.</p>
+            {% else %}
+                <p class="meta">В группе пока нет занятий для журнала.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Личный раздел{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>Личный раздел</h1>
+                <p class="meta">Курсы, заявки, ближайшие занятия и уведомления.</p>
+            </div>
+            <div class="user-heading-actions">
+                <a class="button-link light" href="{% url 'role_user:courses' %}">Найти курс</a>
+                <a class="button-link light" href="{% url 'role_user:notifications' %}">Уведомления{% if unread_notifications_count %} · {{ unread_notifications_count }}{% endif %}</a>
+            </div>
+        </section>
+
+        <section class="user-grid">
+            <article class="card user-panel">
+                <h2>Ближайшее занятие</h2>
+                {% if next_schedule %}
+                    <p class="user-main-line">{{ next_schedule.group.course.title }}</p>
+                    <p class="meta">{{ next_schedule.start_at|date:"d.m.Y H:i" }} · {{ next_schedule.group.name }}</p>
+                    {% if next_schedule.lesson %}
+                        <p>{{ next_schedule.lesson.title }}</p>
+                    {% endif %}
+                {% else %}
+                    <p class="meta">Пока нет запланированных занятий.</p>
+                {% endif %}
+            </article>
+
+            <article class="card user-panel">
+                <h2>Мои курсы</h2>
+                {% for enrollment in enrollments %}
+                    <a class="user-row-link" href="{% url 'role_user:my_course_detail' enrollment.course.id %}">
+                        <span>{{ enrollment.course.title }}</span>
+                        <small>{{ enrollment.get_status_display }}</small>
+                    </a>
+                {% empty %}
+                    <p class="meta">Вы пока не зачислены ни на один курс.</p>
+                {% endfor %}
+                <a class="button-link light user-panel-action" href="{% url 'role_user:my_courses' %}">Все мои курсы</a>
+            </article>
+
+            <article class="card user-panel">
+                <h2>Заявки</h2>
+                {% for application in applications %}
+                    <a class="user-row-link" href="{% url 'role_user:course_detail' application.course.id %}">
+                        <span>{{ application.course.title }}</span>
+                        <small>{{ application.get_status_display }}</small>
+                    </a>
+                {% empty %}
+                    <p class="meta">Заявок пока нет.</p>
+                {% endfor %}
+            </article>
+        </section>
+    </div>
+{% endblock %}

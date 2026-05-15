@@ -1,0 +1,41 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Уведомления преподавателя{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Уведомления</h1>
+                <p class="meta">Новые материалы, вопросы студентов, проверки и изменения расписания.</p>
+            </div>
+        </section>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_read">
+            <button class="button-link light" type="submit">Отметить прочитанными</button>
+        </form>
+
+        <section class="card teacher-panel">
+            <div class="teacher-list">
+                {% for notification in notifications %}
+                    <div class="teacher-list-item{% if not notification.is_read %} is-unread{% endif %}">
+                        <strong>{{ notification.title }}</strong>
+                        {% if not notification.is_read %}<span class="teacher-unread-label">Непрочитано</span>{% endif %}
+                        <p>{{ notification.message }}</p>
+                        <small>{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                {% empty %}
+                    <p class="meta">Уведомлений пока нет.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

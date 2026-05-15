@@ -1,0 +1,55 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ test.title }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>{{ test.title }}</h1>
+                <p class="meta">{{ course.title }} · {{ schedule.lesson.title }}</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_user:lesson_detail' course.id schedule.id %}">К занятию</a>
+        </section>
+
+        {% if latest_attempt %}
+            <section class="card user-panel">
+                <h2>Последний результат</h2>
+                <p class="user-main-line">{{ latest_attempt.score }}%</p>
+                <p class="meta">{{ latest_attempt.get_status_display }} · проходной балл {{ test.passing_score }}%</p>
+            </section>
+        {% endif %}
+
+        <section class="card user-panel">
+            <h2>Вопросы</h2>
+            {% if test.description %}
+                <p class="course-description">{{ test.description }}</p>
+            {% endif %}
+            <form class="user-test-form" method="post">
+                {% csrf_token %}
+                {% for question in test.questions.all %}
+                    <fieldset class="user-test-question">
+                        <legend>{{ question.sort_order }}. {{ question.question_text }}</legend>
+                        {% for answer in question.answers.all %}
+                            <label class="user-test-answer">
+                                <input type="radio" name="question_{{ question.id }}" value="{{ answer.id }}" required>
+                                <span>{{ answer.answer_text }}</span>
+                            </label>
+                        {% endfor %}
+                    </fieldset>
+                {% empty %}
+                    <p class="meta">В тесте пока нет вопросов.</p>
+                {% endfor %}
+                {% if test.questions.all %}
+                    <button class="button-link" type="submit">Завершить тест</button>
+                {% endif %}
+            </form>
+        </section>
+    </div>
+{% endblock %}

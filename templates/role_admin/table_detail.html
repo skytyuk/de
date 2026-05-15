@@ -1,0 +1,130 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ model_verbose }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>{{ model_verbose }}</h1>
+                <p class="meta">База: {{ database_name }} · Таблица: {{ db_table }}</p>
+                <p class="meta">{{ table_description }}</p>
+            </div>
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:record_create' model_name %}{% if query_string %}?{{ query_string }}{% endif %}" data-preserve-page-state>Добавить</a>
+                <a class="button-link light" href="{% url 'role_admin:table_list' %}">Назад</a>
+            </div>
+        </section>
+
+        {% if notice %}<p class="admin-notice">{{ notice }}</p>{% endif %}
+        {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+
+        <section class="card admin-panel">
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:export_table_json' model_name %}">Скачать JSON</a>
+                <a class="button-link light" href="{% url 'role_admin:export_table_csv' model_name %}">Скачать CSV</a>
+            </div>
+            <form class="admin-import-form" method="post" action="{% url 'role_admin:import_table_json' model_name %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="fixture" accept="application/json,.json" required>
+                <label class="admin-checkbox">
+                    <input type="checkbox" name="replace">
+                    <span>Полный откат таблицы: удалить текущие записи и восстановить их из JSON</span>
+                </label>
+                <button class="button-link" type="submit">Загрузить JSON</button>
+            </form>
+        </section>
+
+        {% if has_table_tools %}
+            <section class="card admin-panel" id="admin-table-tools">
+                <h2>Поиск и фильтры</h2>
+                <form class="admin-filter-form" method="get">
+                    {% if search_placeholder %}
+                        <div class="form-field">
+                            <label for="table-record-search">Поиск</label>
+                            <input id="table-record-search" name="q" type="search" value="{{ search_query }}" placeholder="{{ search_placeholder }}">
+                        </div>
+                    {% endif %}
+                    {% if table_filters %}
+                        {% if filters_collapsible %}
+                            <details class="admin-filter-details" open>
+                                <summary>Фильтры</summary>
+                                <div class="admin-filter-grid">
+                        {% endif %}
+                        {% for filter in table_filters %}
+                            <div class="form-field">
+                                <label for="filter-{{ filter.name }}">{{ filter.label }}</label>
+                                <select id="filter-{{ filter.name }}" name="{{ filter.name }}">
+                                    <option value="">Все</option>
+                                    {% for option in filter.options %}
+                                        <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endfor %}
+                        {% if filters_collapsible %}
+                                </div>
+                            </details>
+                        {% endif %}
+                    {% endif %}
+                    <div class="admin-row-actions">
+                        <button class="button-link" type="submit">Показать</button>
+                        <a class="button-link light" href="{% url 'role_admin:table_detail' model_name %}">Сбросить</a>
+                    </div>
+                </form>
+            </section>
+        {% endif %}
+
+        <section class="card admin-panel">
+            <div class="admin-data-wrap">
+                <table class="admin-data-table">
+                    <thead>
+                        <tr>
+                            {% for column in columns %}
+                                <th>{{ column }}</th>
+                            {% endfor %}
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                {% for value in row.values %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <a class="button-link light" href="{% url 'role_admin:record_update' model_name row.object.pk %}{% if query_string %}?{{ query_string }}{% endif %}" data-preserve-page-state>Изменить</a>
+                                        <a class="button-link light" href="{% url 'role_admin:record_delete' model_name row.object.pk %}{% if query_string %}?{{ query_string }}{% endif %}" data-preserve-page-state>Удалить</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="{{ columns|length|add:1 }}">Записей пока нет.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {% if page.has_other_pages %}
+            <nav class="admin-pagination">
+                {% if page.has_previous %}
+                    <a class="button-link light" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page.previous_page_number }}">Назад</a>
+                {% endif %}
+                <span class="button-link light">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a class="button-link light" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page.next_page_number }}">Вперед</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+{% endblock %}

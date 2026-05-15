@@ -1,0 +1,114 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ course.title }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>{{ course.title }}</h1>
+                <p class="meta">
+                    {% if enrollment.group %}{{ enrollment.group.name }}{% else %}Группа пока не назначена{% endif %}
+                </p>
+            </div>
+            <div class="user-heading-actions">
+                <span class="course-status-badge is-static">Обучение</span>
+                <a class="button-link light" href="{% url 'role_user:my_courses' %}">Мои курсы</a>
+            </div>
+        </section>
+
+        <section class="card user-panel">
+            <h2>Информация о курсе</h2>
+            <p class="course-description">{{ course.description|default:"Описание курса пока не добавлено." }}</p>
+            {% if course.for_whom_description %}
+                <p class="course-description">Для кого сделан курс: {{ course.for_whom_description }}</p>
+            {% endif %}
+            <div class="course-meta">
+                {% if course.category %}<span>{{ course.category.name }}</span>{% endif %}
+                <span>Уровень: {{ course.get_level_display }}</span>
+                {% if course.duration_hours %}<span>Длительность: {{ course.duration_hours }} ч.</span>{% endif %}
+                <span>Стоимость: {{ course.price }} ₽</span>
+            </div>
+            {% if course_tags %}
+                <p class="course-label">Теги:</p>
+                <div class="course-tags">
+                    {% for tag in course_tags %}
+                        <span>{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="user-progress-grid is-compact">
+            <article class="card user-panel">
+                <h2>Прогресс</h2>
+                <p class="user-main-line">{{ progress_percent }}%</p>
+                <p class="meta">{{ completed_lessons_count }} из {{ lessons_count }} занятий завершено</p>
+            </article>
+            <article class="card user-panel">
+                <h2>Группа</h2>
+                {% if enrollment.group %}
+                    <p class="user-main-line">{{ enrollment.group.name }}</p>
+                    <p class="meta">Преподаватель: {{ enrollment.group.teacher|default:"не назначен" }}</p>
+                {% else %}
+                    <p class="meta">Группа пока не назначена.</p>
+                {% endif %}
+            </article>
+        </section>
+
+        <section class="card user-panel">
+            <h2>Будущие занятия</h2>
+            {% if schedules %}
+                <div class="user-schedule-list">
+                    {% for schedule in schedules %}
+                        <div class="user-schedule-item">
+                            <div>
+                                <strong>{{ schedule.start_at|date:"d.m.Y H:i" }}</strong>
+                                <p class="meta">
+                                    {{ schedule.lesson.title|default:"Занятие по курсу" }}
+                                    {% if schedule.duration_minutes %} · {{ schedule.duration_minutes }} мин.{% endif %}
+                                    {% if schedule.teacher %} · {{ schedule.teacher }}{% endif %}
+                                </p>
+                            </div>
+                            <a class="button-link light" href="{% url 'role_user:lesson_detail' course.id schedule.id %}">Открыть занятие</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif next_schedule %}
+                <p class="user-main-line">{{ next_schedule.start_at|date:"d.m.Y H:i" }}</p>
+                <p class="meta">{{ next_schedule.lesson.title|default:"Занятие по курсу" }}</p>
+            {% else %}
+                <p class="meta">Открытых занятий пока нет. Они появятся после публикации администратором или преподавателем.</p>
+            {% endif %}
+        </section>
+
+        <section class="card user-panel">
+            <h2>Архив прошедших занятий</h2>
+            {% if archived_schedules %}
+                <div class="user-schedule-list">
+                    {% for schedule in archived_schedules %}
+                        <div class="user-schedule-item">
+                            <div>
+                                <strong>{{ schedule.start_at|date:"d.m.Y H:i" }}</strong>
+                                <p class="meta">
+                                    {{ schedule.lesson.title|default:"Занятие по курсу" }}
+                                    {% if schedule.duration_minutes %} · {{ schedule.duration_minutes }} мин.{% endif %}
+                                    {% if schedule.get_status_display %} · {{ schedule.get_status_display }}{% endif %}
+                                </p>
+                            </div>
+                            <a class="button-link light" href="{% url 'role_user:lesson_detail' course.id schedule.id %}">Открыть архив</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="meta">Прошедших опубликованных занятий пока нет.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

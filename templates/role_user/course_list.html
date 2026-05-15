@@ -1,0 +1,136 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Курсы{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>Курсы</h1>
+                <p class="meta">Выберите курс и отправьте заявку на обучение.</p>
+            </div>
+            {% if user_is_student %}
+                <a class="button-link light" href="{% url 'role_user:my_courses' %}">Мои курсы</a>
+            {% endif %}
+        </section>
+
+        <form class="course-filter card" method="get" id="course-filter-form">
+            <div class="form-field">
+                <label for="course-search">Поиск</label>
+                <input id="course-search" type="search" name="q" value="{{ search_query }}" placeholder="Название курса">
+            </div>
+            <div class="form-field">
+                <label for="course-category">Категория</label>
+                <select id="course-category" name="category">
+                    <option value="">Все категории</option>
+                    {% for category in course_categories %}
+                        <option value="{{ category.id }}"{% if category.is_selected %} selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="course-level">Уровень</label>
+                <select id="course-level" name="level">
+                    <option value="">Все уровни</option>
+                    {% for value, label in course_levels %}
+                        <option value="{{ value }}"{% if selected_level == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="course-filter-actions">
+                <button class="button-link" type="submit">Найти</button>
+                <a class="button-link light" href="{% url 'role_user:courses' %}" data-preserve-course-scroll>Сбросить</a>
+            </div>
+        </form>
+
+        {% if tag_items %}
+            <details class="course-tag-picker"{% if selected_tags %} open{% endif %}>
+                <summary>
+                    <span>Выбрать теги{% if selected_tags %}: {{ selected_tags|join:", " }}{% endif %}</span>
+                </summary>
+                <div class="course-tag-filter">
+                    {% for tag in tag_items %}
+                        <a class="course-tag-filter-item{% if tag.is_selected %} is-selected{% endif %}" href="{{ tag.url }}" data-preserve-course-scroll>{{ tag.name }}</a>
+                    {% endfor %}
+                </div>
+            </details>
+        {% endif %}
+
+        <section class="course-grid">
+            {% for item in course_items %}
+                <article class="card course-card">
+                    <div>
+                        <div class="course-top-line">
+                            {% if item.course.category %}
+                                <p class="user-eyebrow">{{ item.course.category.name }}</p>
+                            {% endif %}
+                            {% if item.application_label %}
+                                <span class="course-status-badge is-static">{{ item.application_label }}</span>
+                            {% endif %}
+                        </div>
+                        <h2>{{ item.course.title }}</h2>
+                        <p class="course-description">{{ item.course.description|default:"Описание курса пока не добавлено." }}</p>
+                        {% if item.course.for_whom_description %}
+                            <p class="course-description">Для кого сделан курс: {{ item.course.for_whom_description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="course-meta">
+                        <span>Уровень: {{ item.course.get_level_display }}</span>
+                        {% if item.course.duration_hours %}
+                            <span>Длительность: {{ item.course.duration_hours }} ч.</span>
+                        {% endif %}
+                        <span>Стоимость: {{ item.course.price }} ₽</span>
+                    </div>
+                    {% if item.tags %}
+                        <p class="course-label">Теги:</p>
+                        <div class="course-tags">
+                            {% for tag in item.tags %}
+                                <a class="{% if tag.is_selected %}is-selected{% endif %}" href="{{ tag.url }}" data-preserve-course-scroll>{{ tag.name }}</a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="course-actions">
+                        <a class="button-link light" href="{% url 'role_user:course_detail' item.course.id %}">Подробнее</a>
+                        {% if item.enrollment %}
+                            <a class="button-link" href="{% url 'role_user:my_course_detail' item.course.id %}">Открыть</a>
+                        {% elif item.can_apply %}
+                            <form method="post" action="{% url 'role_user:apply_course' item.course.id %}">
+                                {% csrf_token %}
+                                <button class="button-link" type="submit">Подать заявку</button>
+                            </form>
+                        {% elif current_user and not user_is_student %}
+                            <button class="button-link" type="button" disabled>Только студент</button>
+                        {% else %}
+                            <button class="button-link" type="button" disabled>Заявка отправлена</button>
+                        {% endif %}
+                    </div>
+                </article>
+            {% empty %}
+                <div class="card user-empty">
+                    <p>Активных курсов пока нет.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+    <script>
+        (() => {
+            const scrollKey = "course-list-scroll-y";
+            const saveScroll = () => sessionStorage.setItem(scrollKey, String(window.scrollY));
+            document.querySelectorAll("[data-preserve-course-scroll]").forEach((element) => {
+                element.addEventListener("click", saveScroll);
+            });
+            document.getElementById("course-filter-form")?.addEventListener("submit", saveScroll);
+            const savedScroll = sessionStorage.getItem(scrollKey);
+            if (savedScroll !== null) {
+                requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll)));
+                sessionStorage.removeItem(scrollKey);
+            }
+        })();
+    </script>
+{% endblock %}

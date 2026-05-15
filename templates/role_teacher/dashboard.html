@@ -1,0 +1,82 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Кабинет преподавателя{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Кабинет преподавателя</h1>
+                <p class="meta">Группы, расписание, материалы, проверки и результаты студентов.</p>
+            </div>
+        </section>
+
+        <section class="teacher-grid">
+            <article class="card teacher-panel">
+                <h2>Курсов</h2>
+                <p class="teacher-stat">{{ courses_count }}</p>
+            </article>
+            <article class="card teacher-panel">
+                <h2>Групп</h2>
+                <p class="teacher-stat">{{ groups_count }}</p>
+            </article>
+            <article class="card teacher-panel">
+                <h2>На проверку</h2>
+                <p class="teacher-stat">{{ unchecked_submissions_count }}</p>
+            </article>
+        </section>
+
+        <section class="teacher-split-grid">
+            <article class="card teacher-panel">
+                <h2>Ближайшие занятия</h2>
+                <div class="teacher-list">
+                    {% for schedule in upcoming_schedules %}
+                        <div class="teacher-list-item">
+                            <strong>{{ schedule.start_at|date:"d.m.Y H:i" }}</strong>
+                            <p class="meta">{{ schedule.group.course.title }} · {{ schedule.group.name }}</p>
+                            <p>{{ schedule.lesson.title|default:"Занятие по курсу" }}</p>
+                        </div>
+                    {% empty %}
+                        <p class="meta">Ближайших занятий пока нет.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="card teacher-panel">
+                <h2>Последние тесты</h2>
+                <div class="teacher-list">
+                    {% for attempt in recent_attempts %}
+                        <div class="teacher-list-item">
+                            <strong>{{ attempt.student }}</strong>
+                            <p class="meta">{{ attempt.test.title }} · {{ attempt.score }}% · {{ attempt.get_status_display }}</p>
+                        </div>
+                    {% empty %}
+                        <p class="meta">Результатов тестов пока нет.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+
+        <section class="card teacher-panel">
+            <h2>Мои группы</h2>
+            <div class="teacher-card-list">
+                {% for group in groups %}
+                    <a class="teacher-card-link" href="{% url 'role_teacher:group_detail' group.id %}">
+                        <span>
+                            <strong>{{ group.name }}</strong>
+                            <small>{{ group.course.title }} · {{ group.students_count }} студентов</small>
+                        </span>
+                    </a>
+                {% empty %}
+                    <p class="meta">Группы пока не назначены.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

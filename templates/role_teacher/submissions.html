@@ -1,0 +1,176 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Проверка{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Проверка</h1>
+            </div>
+            <a class="button-link light" href="{% url 'role_teacher:content' %}">Управление УП</a>
+        </section>
+
+        <nav class="teacher-tabs" id="teacher-submissions-workspace">
+            {% for tab in mode_tabs %}
+                <a class="button-link light{% if tab.active %} is-active{% endif %}" href="{{ tab.url }}#teacher-submissions-workspace" data-preserve-scroll>{{ tab.title }}</a>
+            {% endfor %}
+        </nav>
+
+        <section class="card teacher-panel">
+            <h2>Фильтр</h2>
+            <form class="teacher-form teacher-filter-form" method="get" action="{% url 'role_teacher:submissions' %}#teacher-submissions-workspace">
+                <input type="hidden" name="mode" value="{{ mode }}">
+                <div class="form-field">
+                    <label for="submission-course">Курс</label>
+                    <select id="submission-course" name="course">
+                        <option value="">Все курсы</option>
+                        {% for course in courses %}
+                            <option value="{{ course.id }}"{% if selected_course and selected_course.id == course.id %} selected{% endif %}>{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="button-link" type="submit">Показать</button>
+            </form>
+
+            <div class="teacher-filter-block">
+                <h3>Группы</h3>
+                <div class="teacher-filter-list">
+                    <a class="{% if not selected_group %}is-selected{% endif %}" href="{% url 'role_teacher:submissions' %}?mode={{ mode }}{% if selected_course %}&course={{ selected_course.id }}{% endif %}#teacher-submissions-workspace" data-preserve-scroll>Все группы</a>
+                    {% for group in groups %}
+                        <a class="{% if selected_group and selected_group.id == group.id %}is-selected{% endif %}" href="{% url 'role_teacher:submissions' %}?mode={{ mode }}&course={{ group.course.id }}&group={{ group.id }}#teacher-submissions-workspace" data-preserve-scroll>{{ group.course.title }} · {{ group.name }}</a>
+                    {% empty %}
+                        <span>Группы пока не добавлены.</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="teacher-filter-block">
+                <h3>Студенты</h3>
+                <div class="teacher-filter-list">
+                    <a class="{% if not selected_student %}is-selected{% endif %}" href="{% url 'role_teacher:submissions' %}?mode={{ mode }}{% if selected_course %}&course={{ selected_course.id }}{% endif %}{% if selected_group %}&group={{ selected_group.id }}{% endif %}#teacher-submissions-workspace" data-preserve-scroll>Все студенты</a>
+                    {% for enrollment in enrollments %}
+                        <a class="{% if selected_student and selected_student.id == enrollment.student.id %}is-selected{% endif %}" href="{% url 'role_teacher:submissions' %}?mode={{ mode }}&course={{ enrollment.group.course.id }}&group={{ enrollment.group.id }}&student={{ enrollment.student.id }}#teacher-submissions-workspace" data-preserve-scroll>{{ enrollment.student }} · {{ enrollment.group.name }}</a>
+                    {% empty %}
+                        <span>Студенты пока не добавлены.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        {% if mode == "assignments" %}
+            <section class="teacher-split-grid">
+                <article class="card teacher-panel">
+                    <h2>Нужно проверить</h2>
+                    <div class="teacher-list">
+                        {% for submission in unchecked_submissions %}
+                            <div class="teacher-list-item">
+                                <strong>{{ submission.assignment.title }}</strong>
+                                <p class="meta">{{ submission.student }} · {{ submission.assignment.lesson.module.course.title }} · {{ submission.assignment.lesson.title }}</p>
+                                {% if submission.answer_text %}<p>{{ submission.answer_text }}</p>{% endif %}
+                                <div class="teacher-resource-actions">
+                                    {% if submission.file %}<a href="{{ submission.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file.url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
+                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file_url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                </div>
+                                <form class="teacher-grade-form" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="grade_submission">
+                                    <input type="hidden" name="submission_id" value="{{ submission.id }}">
+                                    <input type="hidden" name="mode" value="{{ mode }}">
+                                    <input type="hidden" name="course" value="{{ selected_course.id }}">
+                                    <input type="hidden" name="group" value="{{ selected_group.id }}">
+                                    <input type="hidden" name="student" value="{{ selected_student.id }}">
+                                    <div class="form-field">
+                                        <label for="score-{{ submission.id }}">Оценка до {{ submission.assignment.max_score }}</label>
+                                        <input id="score-{{ submission.id }}" name="score" type="number" min="0" max="{{ submission.assignment.max_score }}" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="feedback-{{ submission.id }}">Комментарий</label>
+                                        <textarea id="feedback-{{ submission.id }}" name="feedback" rows="3"></textarea>
+                                    </div>
+                                    <button class="button-link" type="submit">Поставить оценку</button>
+                                </form>
+                            </div>
+                        {% empty %}
+                            <p class="meta">Непроверенных заданий нет.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="card teacher-panel">
+                    <h2>Проверено</h2>
+                    <div class="teacher-list">
+                        {% for submission in checked_submissions %}
+                            <div class="teacher-list-item">
+                                <strong>{{ submission.assignment.title }}</strong>
+                                <p class="meta">{{ submission.student }} · {{ submission.assignment.lesson.module.course.title }} · оценка: {{ submission.score|default_if_none:"-" }}/{{ submission.assignment.max_score }}</p>
+                                {% if submission.feedback %}<p>Комментарий: {{ submission.feedback }}</p>{% endif %}
+                                <div class="teacher-resource-actions">
+                                    {% if submission.file %}<a href="{{ submission.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file.url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
+                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file_url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="meta">Проверенных заданий нет.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+        {% else %}
+            <section class="teacher-split-grid">
+                <article class="card teacher-panel">
+                    <h2>В процессе</h2>
+                    <div class="teacher-list">
+                        {% for attempt in unchecked_attempts %}
+                            <div class="teacher-list-item">
+                                <strong>{{ attempt.test.title }}</strong>
+                                <p class="meta">{{ attempt.student }} · {{ attempt.test.lesson.module.course.title }} · начат {{ attempt.started_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="meta">Незавершенных тестов нет.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="card teacher-panel">
+                    <h2>Проверено</h2>
+                    <div class="teacher-list">
+                        {% for attempt in checked_attempts %}
+                            <div class="teacher-list-item">
+                                <strong>{{ attempt.test.title }}</strong>
+                                <p class="meta">{{ attempt.student }} · {{ attempt.test.lesson.module.course.title }} · {{ attempt.get_status_display }} · {{ attempt.score }}%</p>
+                                <small>{{ attempt.finished_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                        {% empty %}
+                            <p class="meta">Завершенных тестов нет.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+        {% endif %}
+    </div>
+
+    <script>
+        (() => {
+            const scrollKey = "teacher-submissions-scroll-y";
+            const saveScroll = () => sessionStorage.setItem(scrollKey, String(window.scrollY));
+            document.querySelectorAll("[data-preserve-scroll]").forEach((element) => {
+                element.addEventListener("click", saveScroll);
+            });
+            document.querySelectorAll(".teacher-page form").forEach((form) => {
+                form.addEventListener("submit", saveScroll);
+            });
+            const savedScroll = sessionStorage.getItem(scrollKey);
+            if (savedScroll !== null) {
+                requestAnimationFrame(() => window.scrollTo(0, Number(savedScroll)));
+                sessionStorage.removeItem(scrollKey);
+            }
+        })();
+    </script>
+{% endblock %}

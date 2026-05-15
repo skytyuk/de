@@ -1,0 +1,16 @@
+[Unit]
+Description=AETY Django project
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/aety
+EnvironmentFile=/var/www/aety/.env
+ExecStart=/var/www/aety/.venv/bin/gunicorn --workers 3 --bind unix:/run/aety/aety.sock core.wsgi:application
+RuntimeDirectory=aety
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

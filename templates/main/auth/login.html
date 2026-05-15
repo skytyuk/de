@@ -1,0 +1,41 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Авторизация{% endblock %}
+{% block page_width %}page-narrow{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/pages_main/auth.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="card auth-card login-card">
+        <h1>Авторизация</h1>
+        <form method="post" id="login-form" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-field{% if field.errors or form.non_field_errors %} has-error{% endif %}">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                    {% if field.name == "password" and form.non_field_errors %}
+                        <ul class="errorlist nonfield-errors login-credentials-error" data-login-credentials-error>
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button class="button-link" type="submit">Войти</button>
+        </form>
+        <p>
+            Нет аккаунта?
+            <a href="{% url 'main:register' %}">Зарегистрироваться</a>
+        </p>
+    </div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{% static 'js/pages_main/login.js' %}?v={{ asset_version }}" defer></script>
+{% endblock %}

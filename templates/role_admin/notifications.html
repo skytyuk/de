@@ -1,0 +1,49 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Уведомления админа{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Уведомления</h1>
+                <p class="meta">Новые заявки и служебные события для администратора.</p>
+            </div>
+            <div class="admin-actions">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="mark_read">
+                    <button class="button-link light" type="submit">Отметить прочитанными</button>
+                </form>
+                <a class="button-link light" href="{% url 'role_admin:dashboard' %}">Админ</a>
+            </div>
+        </section>
+
+        <section class="card admin-panel">
+            <div class="admin-table-list">
+                {% for notification in notifications %}
+                    <article class="admin-table-card{% if not notification.is_read %} is-unread{% endif %}">
+                        <div>
+                            <div class="admin-notification-title">
+                                <h2>{{ notification.title }}</h2>
+                                {% if not notification.is_read %}
+                                    <span class="admin-unread-label">Непрочитано</span>
+                                {% endif %}
+                            </div>
+                            <p class="meta">{{ notification.message }}</p>
+                            <p class="meta">{{ notification.created_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="meta">Уведомлений пока нет.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

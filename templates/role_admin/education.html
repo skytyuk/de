@@ -1,0 +1,115 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Учебный процесс{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Учебный процесс</h1>
+                <p class="meta">Заявки, группы, расписание и наполнение курсов в одном рабочем центре.</p>
+            </div>
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:applications' %}">Заявки</a>
+                <a class="button-link light" href="{% url 'role_admin:schedule' %}">Расписание</a>
+                <a class="button-link light" href="{% url 'role_admin:dashboard' %}">Админ</a>
+            </div>
+        </section>
+
+        <section class="admin-grid">
+            <article class="card admin-panel">
+                <h2>Новых заявок</h2>
+                <p class="admin-stat">{{ applications_count }}</p>
+            </article>
+            <article class="card admin-panel">
+                <h2>Активных групп</h2>
+                <p class="admin-stat">{{ active_groups_count }}</p>
+            </article>
+            <article class="card admin-panel">
+                <h2>Студентов учится</h2>
+                <p class="admin-stat">{{ active_enrollments_count }}</p>
+            </article>
+            <article class="card admin-panel">
+                <h2>Занятий впереди</h2>
+                <p class="admin-stat">{{ planned_lessons_count }}</p>
+            </article>
+        </section>
+
+        <section class="card admin-panel">
+            <h2>Ближайшие занятия</h2>
+            <div class="admin-data-wrap">
+                <table class="admin-data-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Курс</th>
+                            <th>Группа</th>
+                            <th>Занятие</th>
+                            <th>Преподаватель</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                            <tr>
+                                <td>{{ schedule.start_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ schedule.group.course.title }}</td>
+                                <td>{{ schedule.group.name }}</td>
+                                <td>{{ schedule.lesson.title|default:"Занятие по курсу" }}</td>
+                                <td>{{ schedule.teacher|default:"Не назначен" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5">Ближайшие занятия пока не назначены.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-split-grid">
+            <article class="card admin-panel">
+                <h2>Группы</h2>
+                <div class="admin-table-list">
+                    {% for group in groups %}
+                        <div class="admin-table-card">
+                            <div>
+                                <h2>{{ group.name }}</h2>
+                                <p class="meta">{{ group.course.title }} · {{ group.students_count }} студентов</p>
+                                <p class="meta">Преподаватель: {{ group.teacher|default:"не назначен" }}</p>
+                            </div>
+                            <a class="button-link light" href="{% url 'role_admin:table_detail' 'studygroup' %}">Открыть</a>
+                        </div>
+                    {% empty %}
+                        <p class="meta">Группы пока не созданы.</p>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="card admin-panel">
+                <h2>Курсы и наполнение</h2>
+                <div class="admin-table-list">
+                    {% for course in courses %}
+                        <div class="admin-table-card">
+                            <div>
+                                <h2>{{ course.title }}</h2>
+                                <p class="meta">
+                                    {{ course.modules_count }} модулей · {{ course.lessons_count }} занятий · {{ course.groups_count }} групп
+                                </p>
+                            </div>
+                            <a class="button-link light" href="{% url 'role_admin:table_detail' 'course' %}">Открыть</a>
+                        </div>
+                    {% empty %}
+                        <p class="meta">Активные курсы пока не созданы.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+    </div>
+{% endblock %}

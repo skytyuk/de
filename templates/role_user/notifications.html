@@ -1,0 +1,93 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Уведомления{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>Уведомления</h1>
+                <p class="meta">Заявки, занятия и результаты обучения.</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="mark_read">
+                <button class="button-link light" type="submit">Отметить прочитанными</button>
+            </form>
+        </section>
+
+        <section class="notification-grid">
+            <article class="card user-panel">
+                <h2>Сообщения</h2>
+                {% for notification in stored_notifications %}
+                    <div class="notification-item{% if not notification.is_read %} is-unread{% endif %}">
+                        <div class="notification-title-line">
+                            <strong>{{ notification.title }}</strong>
+                            {% if not notification.is_read %}
+                                <span class="unread-label">Непрочитано</span>
+                            {% endif %}
+                        </div>
+                        <p>{{ notification.message }}</p>
+                        <small>{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                {% empty %}
+                    <p class="meta">Сообщений пока нет.</p>
+                {% endfor %}
+            </article>
+
+            <article class="card user-panel">
+                <h2>Заявки</h2>
+                {% for application in application_updates %}
+                    <div class="notification-item">
+                        <strong>{{ application.course.title }}</strong>
+                        <p>{{ application.get_status_display }}</p>
+                        <small>{{ application.updated_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                {% empty %}
+                    <p class="meta">Обновлений по заявкам пока нет.</p>
+                {% endfor %}
+            </article>
+
+            <article class="card user-panel">
+                <h2>Скоро занятия</h2>
+                {% for schedule in upcoming_schedules %}
+                    <div class="notification-item">
+                        <strong>{{ schedule.group.course.title }}</strong>
+                        <p>{% if schedule.lesson %}{{ schedule.lesson.title }}{% else %}Занятие{% endif %}</p>
+                        <small>{{ schedule.start_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                {% empty %}
+                    <p class="meta">На ближайшие 7 дней занятий нет.</p>
+                {% endfor %}
+            </article>
+
+            <article class="card user-panel">
+                <h2>Оценки</h2>
+                {% for submission in submission_results %}
+                    <div class="notification-item">
+                        <strong>{{ submission.assignment.title }}</strong>
+                        <p>Задание: {{ submission.score|default_if_none:"-" }} из {{ submission.assignment.max_score }}</p>
+                        <small>{{ submission.assignment.lesson.module.course.title }}</small>
+                    </div>
+                {% endfor %}
+                {% for attempt in test_results %}
+                    <div class="notification-item">
+                        <strong>{{ attempt.test.title }}</strong>
+                        <p>Тест: {{ attempt.score }} · {{ attempt.get_status_display }}</p>
+                        <small>{{ attempt.test.lesson.module.course.title }}</small>
+                    </div>
+                {% empty %}
+                    {% if not submission_results %}
+                        <p class="meta">Оценок пока нет.</p>
+                    {% endif %}
+                {% endfor %}
+            </article>
+        </section>
+    </div>
+{% endblock %}

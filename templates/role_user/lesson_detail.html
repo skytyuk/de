@@ -1,0 +1,162 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ schedule.lesson.title|default:"Занятие" }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="user-heading">
+            <div>
+                <h1>{{ schedule.lesson.title|default:"Занятие по курсу" }}</h1>
+                <p class="meta">
+                    {{ course.title }} · {{ schedule.start_at|date:"d.m.Y H:i" }}
+                    {% if duration_minutes %} · {{ duration_minutes }} мин.{% endif %}
+                    {% if is_archive %} · архив{% endif %}
+                </p>
+            </div>
+            <a class="button-link light" href="{% url 'role_user:my_course_detail' course.id %}">К курсу</a>
+        </section>
+
+        <section class="card user-panel">
+            <h2>Информация</h2>
+            <div class="user-info-list">
+                <p class="meta">Группа: {{ schedule.group.name }}</p>
+                <p class="meta">
+                    Преподаватель:
+                    {% if schedule.teacher %}{{ schedule.teacher }}{% elif schedule.group.teacher %}{{ schedule.group.teacher }}{% else %}не назначен{% endif %}
+                </p>
+                {% if schedule.meeting_code and not is_archive %}
+                    <p class="user-join-code">Код занятия для встречи: <strong>{{ schedule.meeting_code }}</strong></p>
+                {% endif %}
+                {% if progress %}<p class="meta">Прогресс: {{ progress.get_status_display }}</p>{% endif %}
+                {% if attendance %}<p class="meta">Посещаемость: {{ attendance.get_status_display }}</p>{% endif %}
+            </div>
+            {% if lesson and lesson.description %}
+                {% if lesson.description %}
+                    <p class="course-description">Описание: {{ lesson.description }}</p>
+                {% endif %}
+            {% else %}
+                <p class="meta">Нету информации.</p>
+            {% endif %}
+        </section>
+
+        {% if lesson %}
+            <section class="card user-panel">
+                <h2>Материалы</h2>
+                {% if lesson.materials.all %}
+                    <div class="lesson-resource-list">
+                        {% for material in lesson.materials.all %}
+                            <article class="lesson-resource-item">
+                                <h3>{{ material.title }}</h3>
+                                <p class="course-description">{{ material.description|default:"Нет информации." }}</p>
+                                <div class="lesson-resource-actions">
+                                    {% if material.file %}
+                                        <a href="{{ material.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file.url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>
+                                    {% endif %}
+                                    {% if material.file_url %}
+                                        <a href="{{ material.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file_url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="meta">Пусто.</p>
+                {% endif %}
+            </section>
+
+            <section class="user-lesson-grid">
+                <article class="card user-panel" id="assignments">
+                    <h2>Задания</h2>
+                    <div class="lesson-resource-list">
+                        {% for assignment in assignments %}
+                            <article class="lesson-resource-item">
+                                <h3>{{ assignment.title }}</h3>
+                                <p class="course-description">{{ assignment.description|default:"Нет информации." }}</p>
+
+                                <div class="lesson-resource-actions">
+                                    {% if assignment.file %}
+                                        <a href="{{ assignment.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file.url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="file">Файл задания</a>
+                                    {% endif %}
+                                    {% if assignment.file_url %}
+                                        <a href="{{ assignment.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file_url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="link">Ссылка задания</a>
+                                    {% endif %}
+                                </div>
+
+                                {% if assignment.user_submission %}
+                                    <div class="student-submission-summary">
+                                        <p class="meta">
+                                            Ответ отправлен · {{ assignment.user_submission.get_status_display }}
+                                            {% if assignment.user_submission.score != None %} · {{ assignment.user_submission.score }}/{{ assignment.max_score }}{% endif %}
+                                        </p>
+                                        {% if assignment.user_submission.feedback %}
+                                            <p class="meta">Комментарий: {{ assignment.user_submission.feedback }}</p>
+                                        {% endif %}
+                                        <div class="lesson-resource-actions">
+                                            {% if assignment.user_submission.file %}
+                                                <a href="{{ assignment.user_submission.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.user_submission.file.url }}" data-preview-title="Ваш файл" data-preview-kind="file">Ваш файл</a>
+                                            {% endif %}
+                                            {% if assignment.user_submission.file_url %}
+                                                <a href="{{ assignment.user_submission.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.user_submission.file_url }}" data-preview-title="Ваша ссылка" data-preview-kind="link">Ваша ссылка</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                {% if assignment.submission_error %}
+                                    <p class="field-error">{{ assignment.submission_error }}</p>
+                                {% endif %}
+
+                                <form class="student-answer-form" method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="submit_assignment">
+                                    <input type="hidden" name="assignment" value="{{ assignment.id }}">
+                                    <div class="form-field">
+                                        <label for="answer-text-{{ assignment.id }}">Комментарий к ответу</label>
+                                        <textarea id="answer-text-{{ assignment.id }}" name="answer_text" rows="3">{{ assignment.user_submission.answer_text|default_if_none:"" }}</textarea>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="answer-link-{{ assignment.id }}">Ссылка</label>
+                                        <input id="answer-link-{{ assignment.id }}" name="file_url" type="url" value="{{ assignment.user_submission.file_url|default_if_none:'' }}">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="answer-file-{{ assignment.id }}">Файл</label>
+                                        <input id="answer-file-{{ assignment.id }}" name="file" type="file">
+                                    </div>
+                                    <button class="button-link" type="submit">
+                                        {% if assignment.user_submission %}Обновить ответ{% else %}Отправить ответ{% endif %}
+                                    </button>
+                                </form>
+                            </article>
+                        {% empty %}
+                            <p class="meta">Нет заданий.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+
+                <article class="card user-panel">
+                    <h2>Тесты</h2>
+                    <div class="lesson-extra">
+                        {% for test in tests %}
+                            <a href="{% url 'role_user:test_detail' course.id schedule.id test.id %}">
+                                {{ test.title }}
+                                {% if test.user_attempt %}
+                                    · {{ test.user_attempt.get_status_display }} · {{ test.user_attempt.score }}%
+                                {% else %}
+                                    · открыть тест
+                                {% endif %}
+                            </a>
+                        {% empty %}
+                            <p class="meta">Нету информации.</p>
+                        {% endfor %}
+                    </div>
+                </article>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

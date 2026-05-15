@@ -1,0 +1,34 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Удалить запись{% endblock %}
+{% block page_width %}page-medium{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Удалить запись</h1>
+                <p class="meta">{{ model_verbose }}</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_admin:table_detail' model_name %}{% if return_query %}?{{ return_query }}{% endif %}">Назад</a>
+        </section>
+
+        {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+
+        <section class="card admin-panel">
+            <p>Запись будет удалена безвозвратно:</p>
+            <p><strong>{{ object }}</strong></p>
+            <form class="admin-form-actions" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next_query" value="{{ return_query }}">
+                <button class="button-link danger-button" type="submit">Удалить</button>
+                <a class="button-link light" href="{% url 'role_admin:table_detail' model_name %}{% if return_query %}?{{ return_query }}{% endif %}">Отмена</a>
+            </form>
+        </section>
+    </div>
+{% endblock %}

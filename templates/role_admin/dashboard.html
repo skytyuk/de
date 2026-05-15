@@ -1,0 +1,57 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Админка{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Админка</h1>
+                <p class="meta">База данных: {{ database_name }} · {{ database_engine }}</p>
+            </div>
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:education' %}">Учебный процесс</a>
+                <a class="button-link light" href="{% url 'role_admin:table_list' %}">Таблицы</a>
+                <a class="button-link light" href="{% url 'role_admin:applications' %}">Заявки</a>
+                <a class="button-link light" href="{% url 'role_admin:database_tools' %}">Бэкап</a>
+            </div>
+        </section>
+
+        <section class="admin-grid">
+            <article class="card admin-panel">
+                <h2>Таблиц</h2>
+                <p class="admin-stat">{{ tables_count }}</p>
+            </article>
+            <article class="card admin-panel">
+                <h2>Записей</h2>
+                <p class="admin-stat">{{ total_records }}</p>
+            </article>
+            <article class="card admin-panel">
+                <h2>База</h2>
+                <p class="admin-stat">{{ database_name }}</p>
+            </article>
+        </section>
+
+        <section class="card admin-panel">
+            <h2>Основные таблицы</h2>
+            <div class="admin-table-list">
+                {% for table in tables %}
+                    <div class="admin-table-card">
+                        <div>
+                            <h2>{{ table.verbose_name }}</h2>
+                            <p class="meta">{{ table.db_table }} · {{ table.count }} записей</p>
+                            <p class="meta">{{ table.description }}</p>
+                        </div>
+                        <a class="button-link light" href="{% url 'role_admin:table_detail' table.model_name %}">Открыть</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

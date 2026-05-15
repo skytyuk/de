@@ -1,0 +1,70 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Бэкап базы{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Бэкап и откат</h1>
+                <p class="meta">База данных: {{ database_name }} · {{ database_engine }}</p>
+            </div>
+            <a class="button-link light" href="{% url 'role_admin:dashboard' %}" data-history-back data-fallback-url="{% url 'role_admin:dashboard' %}">Назад</a>
+        </section>
+
+        {% if notice %}<p class="admin-notice">{{ notice }}</p>{% endif %}
+        {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+
+        <section class="admin-grid">
+            <article class="card admin-panel">
+                <h2>Сохранить всю БД</h2>
+                <p class="meta">Скачивает все таблицы приложения main в JSON-файл.</p>
+                <a class="button-link" href="{% url 'role_admin:export_database_json' %}">Скачать JSON</a>
+            </article>
+
+            <article class="card admin-panel">
+                <h2>Откатить всю БД</h2>
+                <p class="meta">Без галочки файл просто добавит или обновит записи. С галочкой текущие данные main будут заменены содержимым JSON-бэкапа.</p>
+                <form class="admin-import-form" method="post" action="{% url 'role_admin:import_database_json' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" name="fixture" accept="application/json,.json" required>
+                    <label class="admin-checkbox">
+                        <input type="checkbox" name="replace">
+                        <span>Полный откат main: удалить текущие записи и восстановить их из JSON</span>
+                    </label>
+                    <button class="button-link" type="submit">Загрузить JSON</button>
+                </form>
+            </article>
+
+            <article class="card admin-panel">
+                <h2>Таблицы</h2>
+                <p class="meta">Каждую таблицу можно сохранить отдельно в JSON или CSV.</p>
+                <a class="button-link light" href="{% url 'role_admin:table_list' %}">Открыть таблицы</a>
+            </article>
+        </section>
+
+        <section class="card admin-panel">
+            <h2>Что хранится</h2>
+            <div class="admin-table-list">
+                {% for table in tables %}
+                    <div class="admin-table-card">
+                        <div>
+                            <h2>{{ table.db_table }}</h2>
+                            <p class="meta">{{ table.verbose_name }} · {{ table.count }} записей</p>
+                        </div>
+                        <div class="admin-row-actions">
+                            <a class="button-link light" href="{% url 'role_admin:export_table_json' table.model_name %}">JSON</a>
+                            <a class="button-link light" href="{% url 'role_admin:export_table_csv' table.model_name %}">CSV</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

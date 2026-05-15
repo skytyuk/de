@@ -1,0 +1,127 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Расписание{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_admin/admin.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page">
+        <section class="admin-heading">
+            <div>
+                <h1>Расписание занятий</h1>
+                <p class="meta">Планирование онлайн-занятий для учебных групп.</p>
+            </div>
+            <div class="admin-actions">
+                <a class="button-link light" href="{% url 'role_admin:education' %}">Учебный процесс</a>
+                <a class="button-link light" href="{% url 'role_admin:dashboard' %}">Админ</a>
+            </div>
+        </section>
+
+        {% if notice %}<p class="admin-notice">{{ notice }}</p>{% endif %}
+        {% if error %}<p class="admin-error">{{ error }}</p>{% endif %}
+
+        <section class="card admin-panel">
+            <h2>Добавить занятие</h2>
+            <form class="admin-schedule-form" method="post">
+                {% csrf_token %}
+                <div class="form-field">
+                    <label for="group">Группа</label>
+                    <select id="group" name="group" required>
+                        <option value="">Выберите группу</option>
+                        {% for group in groups %}
+                            <option value="{{ group.id }}">{{ group.course.title }} · {{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="lesson">Занятие курса</label>
+                    <select id="lesson" name="lesson">
+                        <option value="">Без привязки к занятию</option>
+                        {% for lesson in lessons %}
+                            <option value="{{ lesson.id }}">{{ lesson.module.course.title }} · {{ lesson.module.title }} · {{ lesson.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="teacher">Преподаватель</label>
+                    <select id="teacher" name="teacher">
+                        <option value="">Преподаватель группы</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="start_at">Начало</label>
+                    <input id="start_at" name="start_at" type="datetime-local" required>
+                </div>
+                <div class="form-field">
+                    <label for="end_at">Окончание</label>
+                    <input id="end_at" name="end_at" type="datetime-local" required>
+                </div>
+                <div class="form-field">
+                    <label for="meeting_code">Код занятия</label>
+                    <input id="meeting_code" name="meeting_code" placeholder="AE-0001">
+                </div>
+                <label class="admin-checkbox">
+                    <input type="checkbox" name="is_visible_to_students">
+                    <span>Показать студентам</span>
+                </label>
+                <button class="button-link" type="submit">Добавить в расписание</button>
+            </form>
+        </section>
+
+        <section class="card admin-panel">
+            <h2>Все занятия</h2>
+            <div class="admin-data-wrap">
+                <table class="admin-data-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Курс</th>
+                            <th>Группа</th>
+                            <th>Занятие</th>
+                            <th>Преподаватель</th>
+                            <th>Код</th>
+                            <th>Доступ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                            <tr>
+                                <td>{{ schedule.start_at|date:"d.m.Y H:i" }} - {{ schedule.end_at|date:"H:i" }}</td>
+                                <td>{{ schedule.get_status_display }}</td>
+                                <td>{{ schedule.group.course.title }}</td>
+                                <td>{{ schedule.group.name }}</td>
+                                <td>{{ schedule.lesson.title|default:"Занятие по курсу" }}</td>
+                                <td>{{ schedule.teacher|default:"Не назначен" }}</td>
+                                <td>{{ schedule.meeting_code|default:"-" }}</td>
+                                <td>
+                                    <form class="admin-inline-form" method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_visibility">
+                                        <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+                                        <label class="admin-checkbox">
+                                            <input type="checkbox" name="is_visible_to_students"{% if schedule.is_visible_to_students %} checked{% endif %}>
+                                            <span>Студентам</span>
+                                        </label>
+                                        <button class="button-link light" type="submit">OK</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8">Расписание пока пустое.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+{% endblock %}

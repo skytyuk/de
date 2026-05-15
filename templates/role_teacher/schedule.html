@@ -1,0 +1,67 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Расписание преподавателя{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Расписание</h1>
+                <p class="meta">Онлайн-занятия, группы и статусы проведения.</p>
+            </div>
+        </section>
+
+        <section class="card teacher-panel">
+            <div class="teacher-data-wrap">
+                <table class="teacher-data-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Курс</th>
+                            <th>Группа</th>
+                            <th>Занятие</th>
+                            <th>Статус</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                            <tr>
+                                <td>{{ schedule.start_at|date:"d.m.Y H:i" }} - {{ schedule.end_at|date:"H:i" }}</td>
+                                <td>{{ schedule.group.course.title }}</td>
+                                <td>{{ schedule.group.name }}</td>
+                                <td>{{ schedule.lesson.title|default:"Занятие по курсу" }}</td>
+                                <td>{{ schedule.get_status_display }}</td>
+                                <td>
+                                    <form class="teacher-inline-form" method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_status">
+                                        <input type="hidden" name="schedule_id" value="{{ schedule.id }}">
+                                        <select name="status">
+                                            {% for value, label in statuses %}
+                                                <option value="{{ value }}"{% if schedule.status == value %} selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label class="teacher-checkbox">
+                                            <input type="checkbox" name="is_visible_to_students"{% if schedule.is_visible_to_students %} checked{% endif %}>
+                                            <span>Показать</span>
+                                        </label>
+                                        <button class="button-link light" type="submit">OK</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="6">Расписание пока пустое.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+{% endblock %}

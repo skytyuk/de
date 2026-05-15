@@ -1,0 +1,103 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Главная{% endblock %}
+{% block page_width %}page-medium{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/pages_main/home.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="home-page">
+        <section class="home-hero">
+            <div class="home-hero-copy">
+                <p class="home-eyebrow">Additional Education</p>
+                <h1>Дополнительное образование, которое удобно начать онлайн</h1>
+                <p class="home-lead">
+                    Выбирайте курс, отправляйте заявку и учитесь по понятному расписанию. AE помогает не теряться между занятиями, материалами и результатами.
+                </p>
+                <div class="hero-actions">
+                    {% if current_user and is_teacher %}
+                        <a class="button-link" href="{% url 'role_teacher:dashboard' %}">Открыть кабинет</a>
+                        <a class="button-link light" href="{% url 'main:profile' %}">Профиль</a>
+                    {% elif current_user and is_admin %}
+                        <a class="button-link" href="{% url 'role_admin:dashboard' %}">Открыть кабинет</a>
+                        <a class="button-link light" href="{% url 'main:profile' %}">Профиль</a>
+                    {% elif current_user %}
+                        <a class="button-link" href="{% url 'role_user:courses' %}">Смотреть курсы</a>
+                        <a class="button-link light" href="{% url 'main:profile' %}">Профиль</a>
+                    {% else %}
+                        <a class="button-link" href="{% url 'role_user:courses' %}">Смотреть курсы</a>
+                        <a class="button-link light home-login-button" href="{% url 'main:login' %}">Войти</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="home-quote-board" aria-label="Мотивация к обучению">
+                <blockquote>
+                    <p>Учиться проще, когда путь виден заранее.</p>
+                    <cite>AE</cite>
+                </blockquote>
+                <div class="home-hero-note">
+                    <span>Онлайн-формат</span>
+                    <strong>Курсы, занятия, задания и результаты в одном ритме.</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-section">
+            <div class="home-section-heading">
+                <h2>Популярные курсы</h2>
+                {% if not current_user or is_student %}
+                    <a href="{% url 'role_user:courses' %}">Весь каталог</a>
+                {% endif %}
+            </div>
+            <div class="home-course-grid">
+                {% for course in featured_courses %}
+                    <article class="home-course-card">
+                        <div>
+                            <p class="home-eyebrow">{{ course.category.name|default:"Курс" }}</p>
+                            <h3>{{ course.title }}</h3>
+                            <p>{{ course.description|default:"Практическая программа дополнительного образования с онлайн-занятиями и учебными материалами." }}</p>
+                        </div>
+                        <div class="home-course-meta">
+                            <span>Уровень: {{ course.get_level_display }}</span>
+                            {% if course.duration_hours %}<span>{{ course.duration_hours }} ч.</span>{% endif %}
+                            <span>{{ course.price }} ₽</span>
+                        </div>
+                    </article>
+                {% empty %}
+                    <article class="home-course-card">
+                        <div>
+                            <p class="home-eyebrow">Скоро</p>
+                            <h3>Каталог готовится</h3>
+                            <p>Курсы появятся здесь после публикации администратором.</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="home-story">
+            <div>
+                <p class="home-eyebrow">Почему появился AE</p>
+                <h2>Дополнительное образование должно быть понятным до первого занятия</h2>
+            </div>
+            <p>
+                Идея платформы выросла из простой проблемы: студент хочет быстро записаться на подходящий курс, а учебному центру важно не потерять заявку, расписание и обратную связь. Поэтому AE соединяет каталог, онлайн-занятия, материалы, задания, тесты и уведомления в спокойный учебный маршрут.
+            </p>
+        </section>
+
+        <section class="home-quote-grid">
+            <blockquote>
+                <p>Хороший курс не перегружает человека, а помогает ему двигаться дальше.</p>
+            </blockquote>
+            <blockquote>
+                <p>Знания становятся ценнее, когда их можно сразу применить.</p>
+            </blockquote>
+            <blockquote>
+                <p>Расписание, материалы и обратная связь должны работать как одна система.</p>
+            </blockquote>
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ course.title }}{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_user/user.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="user-page">
+        <section class="card course-detail">
+            {% if application_sent %}
+                <p class="user-inline-notice">Заявка отправлена.</p>
+            {% endif %}
+            <div class="course-top-line">
+                {% if course.category %}
+                    <p class="user-eyebrow">{{ course.category.name }}</p>
+                {% endif %}
+                {% if application_label %}
+                    <span class="course-status-badge is-static">{{ application_label }}</span>
+                {% endif %}
+            </div>
+            <h1>{{ course.title }}</h1>
+            <p class="course-description">{{ course.description|default:"Описание курса пока не добавлено." }}</p>
+            {% if course.for_whom_description %}
+                <p class="course-description">Для кого сделан курс: {{ course.for_whom_description }}</p>
+            {% endif %}
+            <div class="course-meta">
+                <span>Уровень: {{ course.get_level_display }}</span>
+                {% if course.duration_hours %}
+                    <span>Длительность: {{ course.duration_hours }} ч.</span>
+                {% endif %}
+                <span>Стоимость: {{ course.price }} ₽</span>
+            </div>
+            {% if course_tags %}
+                <p class="course-label">Теги:</p>
+                <div class="course-tags">
+                    {% for tag in course_tags %}
+                        <span>{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <div class="course-detail-grid">
+                <section class="course-detail-section">
+                    <h2>Преподаватели</h2>
+                    <div class="course-detail-list">
+                        {% for relation in course.course_teachers.all %}
+                            <span>{{ relation.teacher }}</span>
+                        {% empty %}
+                            <span>Преподаватели пока не назначены</span>
+                        {% endfor %}
+                    </div>
+                </section>
+                <section class="course-detail-section">
+                    <h2>Модули</h2>
+                    <div class="course-detail-list">
+                        {% for module in course.modules.all %}
+                            <span>{{ module.sort_order }}. {{ module.title }}</span>
+                        {% empty %}
+                            <span>Модули пока не добавлены</span>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+            <div class="course-actions">
+                <a class="button-link light" href="{% url 'role_user:courses' %}" data-history-back data-fallback-url="{% url 'role_user:courses' %}">Назад</a>
+                {% if enrollment %}
+                    <a class="button-link" href="{% url 'role_user:my_course_detail' course.id %}">Открыть курс</a>
+                {% elif can_apply %}
+                    <form method="post" action="{% url 'role_user:apply_course' course.id %}">
+                        {% csrf_token %}
+                        <button class="button-link" type="submit">Подать заявку</button>
+                    </form>
+                {% elif current_user and not user_is_student %}
+                    <button class="button-link" type="button" disabled>Только студент</button>
+                {% else %}
+                    <button class="button-link" type="button" disabled>Заявка отправлена</button>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+{% endblock %}

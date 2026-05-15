@@ -1,0 +1,52 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Группы преподавателя{% endblock %}
+{% block page_width %}page-wide{% endblock %}
+
+{% block page_styles %}
+    <link rel="stylesheet" href="{% static 'css/role_teacher/teacher.css' %}?v={{ asset_version }}">
+{% endblock %}
+
+{% block content %}
+    <div class="teacher-page">
+        <section class="teacher-heading">
+            <div>
+                <h1>Мои группы</h1>
+            </div>
+            <a class="button-link light" href="{% url 'role_teacher:schedule' %}">Расписание</a>
+        </section>
+
+        <section class="card teacher-panel">
+            <h2>Фильтр</h2>
+            <form class="teacher-form teacher-filter-form" method="get">
+                <div class="form-field">
+                    <label for="group-course-filter">Курс</label>
+                    <select id="group-course-filter" name="course">
+                        <option value="">Все курсы</option>
+                        {% for course in courses %}
+                            <option value="{{ course.id }}"{% if selected_course and selected_course.id == course.id %} selected{% endif %}>{{ course.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="button-link" type="submit">Показать</button>
+            </form>
+        </section>
+
+        <section class="teacher-card-list">
+            {% for group in groups %}
+                <article class="card teacher-group-card">
+                    <div>
+                        <h2>{{ group.name }}</h2>
+                        <p class="meta">{{ group.course.title }} · {{ group.students_count }} студентов</p>
+                    </div>
+                    <a class="button-link" href="{% url 'role_teacher:group_detail' group.id %}">Открыть</a>
+                </article>
+            {% empty %}
+                <div class="card teacher-panel">
+                    <p class="meta">Группы пока не назначены.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+{% endblock %}
