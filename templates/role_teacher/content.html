@@ -77,7 +77,7 @@
                     <div>
                         <h2>Материалы</h2>
                     </div>
-                    {% if selected_lesson %}
+                    {% if available_lessons %}
                         <button class="button-link" type="button" data-open-modal="add-material-modal">Добавить материал</button>
                     {% endif %}
                 </div>
@@ -89,8 +89,8 @@
                                 <p class="meta">{{ material.lesson.module.course.title }} · {{ material.lesson.module.title }}</p>
                                 <p class="meta">{{ material.description|default:"Описание не заполнено." }}</p>
                                 <div class="teacher-resource-actions">
-                                    {% if material.file %}<a href="{{ material.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file.url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>{% endif %}
-                                    {% if material.file_url %}<a href="{{ material.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file_url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>{% endif %}
+                                    {% if material.file %}<a href="{{ material.file.url }}" download>{{ material.get_material_type_display }}</a>{% endif %}
+                                    {% if material.file_url %}<a href="{{ material.file_url }}" target="_blank" rel="noopener">{{ material.get_material_type_display }}</a>{% endif %}
                                 </div>
                             </div>
                             <div class="teacher-row-actions">
@@ -150,7 +150,7 @@
                 </div>
             </section>
 
-            {% if selected_lesson %}
+            {% if available_lessons %}
                 <dialog class="teacher-modal" id="add-material-modal">
                     <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -158,8 +158,18 @@
                         <input type="hidden" name="mode" value="{{ mode }}">
                         <input type="hidden" name="course" value="{{ selected_course.id }}">
                         <input type="hidden" name="module" value="{{ selected_module.id }}">
-                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
                         <h2>Добавить материал</h2>
+                        <div class="form-field">
+                            <label for="material-lesson">Занятие</label>
+                            <select id="material-lesson" name="lesson" required>
+                                <option value="">Выберите занятие</option>
+                                {% for lesson_item in available_lessons %}
+                                    <option value="{{ lesson_item.id }}"{% if selected_lesson and selected_lesson.id == lesson_item.id %} selected{% endif %}>
+                                        {{ lesson_item.module.course.title }} · {{ lesson_item.module.title }} · {{ lesson_item.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="form-field"><label for="material-title">Наименование</label><input id="material-title" name="title" required></div>
                         <div class="form-field"><label for="material-description">Описание</label><textarea id="material-description" name="description" rows="4"></textarea></div>
                         <div class="form-field">
@@ -185,7 +195,7 @@
                     <div>
                         <h2>Задания</h2>
                     </div>
-                    {% if selected_lesson %}
+                    {% if available_lessons %}
                         <button class="button-link" type="button" data-open-modal="add-assignment-modal">Добавить задание</button>
                     {% endif %}
                 </div>
@@ -198,8 +208,8 @@
                                 <p class="meta">{{ assignment.description|default:"Описание не заполнено." }}</p>
                                 <p class="meta">Максимальный балл: {{ assignment.max_score }}</p>
                                 <div class="teacher-resource-actions">
-                                    {% if assignment.file %}<a href="{{ assignment.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file.url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
-                                    {% if assignment.file_url %}<a href="{{ assignment.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file_url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                    {% if assignment.file %}<a href="{{ assignment.file.url }}" download>Файл</a>{% endif %}
+                                    {% if assignment.file_url %}<a href="{{ assignment.file_url }}" target="_blank" rel="noopener">Ссылка</a>{% endif %}
                                 </div>
                             </div>
                             <div class="teacher-row-actions">
@@ -252,7 +262,7 @@
                 </div>
             </section>
 
-            {% if selected_lesson %}
+            {% if available_lessons %}
                 <dialog class="teacher-modal" id="add-assignment-modal">
                     <form class="teacher-form teacher-modal-body" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -260,8 +270,18 @@
                         <input type="hidden" name="mode" value="{{ mode }}">
                         <input type="hidden" name="course" value="{{ selected_course.id }}">
                         <input type="hidden" name="module" value="{{ selected_module.id }}">
-                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
                         <h2>Добавить задание</h2>
+                        <div class="form-field">
+                            <label for="assignment-lesson">Занятие</label>
+                            <select id="assignment-lesson" name="lesson" required>
+                                <option value="">Выберите занятие</option>
+                                {% for lesson_item in available_lessons %}
+                                    <option value="{{ lesson_item.id }}"{% if selected_lesson and selected_lesson.id == lesson_item.id %} selected{% endif %}>
+                                        {{ lesson_item.module.course.title }} · {{ lesson_item.module.title }} · {{ lesson_item.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="form-field"><label for="assignment-title">Наименование</label><input id="assignment-title" name="title" required></div>
                         <div class="form-field"><label for="assignment-description">Описание</label><textarea id="assignment-description" name="description" rows="4"></textarea></div>
                         <div class="form-field"><label for="assignment-score">Максимальный балл</label><input id="assignment-score" name="max_score" type="number" min="1" value="100"></div>
@@ -280,7 +300,7 @@
                     <div>
                         <h2>Тесты</h2>
                     </div>
-                    {% if selected_lesson %}
+                    {% if available_lessons %}
                         <button class="button-link" type="button" data-open-modal="add-test-modal">Добавить тест</button>
                     {% endif %}
                 </div>
@@ -342,7 +362,7 @@
                 </div>
             </section>
 
-            {% if selected_lesson %}
+            {% if available_lessons %}
                 <dialog class="teacher-modal" id="add-test-modal">
                     <form class="teacher-form teacher-modal-body" method="post">
                         {% csrf_token %}
@@ -350,13 +370,35 @@
                         <input type="hidden" name="mode" value="{{ mode }}">
                         <input type="hidden" name="course" value="{{ selected_course.id }}">
                         <input type="hidden" name="module" value="{{ selected_module.id }}">
-                        <input type="hidden" name="lesson" value="{{ selected_lesson.id }}">
                         <h2>Добавить тест</h2>
+                        <div class="form-field">
+                            <label for="test-lesson">Занятие</label>
+                            <select id="test-lesson" name="lesson" required>
+                                <option value="">Выберите занятие</option>
+                                {% for lesson_item in available_lessons %}
+                                    <option value="{{ lesson_item.id }}"{% if selected_lesson and selected_lesson.id == lesson_item.id %} selected{% endif %}>
+                                        {{ lesson_item.module.course.title }} · {{ lesson_item.module.title }} · {{ lesson_item.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="form-field"><label for="test-title">Наименование</label><input id="test-title" name="title" required></div>
                         <div class="form-field"><label for="test-description">Описание</label><textarea id="test-description" name="description" rows="4"></textarea></div>
-                        <div class="form-field"><label for="test-question">Вопрос</label><input id="test-question" name="question"></div>
-                        <div class="form-field"><label for="test-correct">Верный ответ</label><input id="test-correct" name="correct_answer"></div>
-                        <div class="form-field"><label for="test-wrong">Неверный ответ</label><input id="test-wrong" name="wrong_answer"></div>
+                        <div class="form-field"><label for="test-passing-score">Проходной балл</label><input id="test-passing-score" name="passing_score" type="number" min="1" max="100" value="70"></div>
+                        <div class="form-field"><label for="test-max-attempts">Попыток</label><input id="test-max-attempts" name="max_attempts" type="number" min="1" value="1"></div>
+                        <div class="teacher-question-list" data-test-question-list>
+                            <div class="teacher-question-block" data-test-question-block>
+                                <div class="teacher-question-head">
+                                    <h3>Вопрос <span data-question-number>1</span></h3>
+                                    <button class="button-link light" type="button" data-remove-test-question>Удалить</button>
+                                </div>
+                                <div class="form-field"><label>Вопрос</label><input name="questions" required></div>
+                                <div class="form-field"><label>Балл за вопрос</label><input name="question_scores" type="number" min="1" value="1" required></div>
+                                <div class="form-field"><label>Верный ответ</label><input name="correct_answers" required></div>
+                                <div class="form-field"><label>Неверный ответ</label><input name="wrong_answers" required></div>
+                            </div>
+                        </div>
+                        <button class="button-link light" type="button" data-add-test-question>Добавить вопрос</button>
                         <div class="teacher-form-actions">
                             <button class="button-link" type="submit">Добавить</button>
                             <button class="button-link light" type="button" data-close-modal>Отмена</button>
@@ -420,6 +462,41 @@
                 modal.addEventListener("click", (event) => {
                     if (event.target === modal) modal.close();
                 });
+            });
+
+            document.querySelectorAll("[data-test-question-list]").forEach((list) => {
+                const updateQuestions = () => {
+                    const blocks = [...list.querySelectorAll("[data-test-question-block]")];
+                    blocks.forEach((block, index) => {
+                        const number = block.querySelector("[data-question-number]");
+                        const removeButton = block.querySelector("[data-remove-test-question]");
+                        if (number) number.textContent = String(index + 1);
+                        if (removeButton) removeButton.hidden = blocks.length === 1;
+                    });
+                };
+
+                list.addEventListener("click", (event) => {
+                    const removeButton = event.target.closest("[data-remove-test-question]");
+                    if (!removeButton) return;
+                    const blocks = list.querySelectorAll("[data-test-question-block]");
+                    if (blocks.length <= 1) return;
+                    removeButton.closest("[data-test-question-block]")?.remove();
+                    updateQuestions();
+                });
+
+                const addButton = list.closest("form")?.querySelector("[data-add-test-question]");
+                addButton?.addEventListener("click", () => {
+                    const sourceBlock = list.querySelector("[data-test-question-block]");
+                    if (!sourceBlock) return;
+                    const clone = sourceBlock.cloneNode(true);
+                    clone.querySelectorAll("input").forEach((input) => {
+                        input.value = input.name === "question_scores" ? "1" : "";
+                    });
+                    list.appendChild(clone);
+                    updateQuestions();
+                });
+
+                updateQuestions();
             });
         })();
     </script>

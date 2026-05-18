@@ -73,10 +73,11 @@
                             <div class="teacher-list-item">
                                 <strong>{{ submission.assignment.title }}</strong>
                                 <p class="meta">{{ submission.student }} · {{ submission.assignment.lesson.module.course.title }} · {{ submission.assignment.lesson.title }}</p>
-                                {% if submission.answer_text %}<p>{{ submission.answer_text }}</p>{% endif %}
+                                <p class="meta">Ответ ученика:</p>
+                                <p>{{ submission.answer_text|default:"Ответ текстом не указан." }}</p>
                                 <div class="teacher-resource-actions">
-                                    {% if submission.file %}<a href="{{ submission.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file.url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
-                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file_url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                    {% if submission.file %}<a href="{{ submission.file.url }}" download>Файл ученика</a>{% endif %}
+                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener">Ссылка ученика</a>{% endif %}
                                 </div>
                                 <form class="teacher-grade-form" method="post">
                                     {% csrf_token %}
@@ -110,10 +111,12 @@
                             <div class="teacher-list-item">
                                 <strong>{{ submission.assignment.title }}</strong>
                                 <p class="meta">{{ submission.student }} · {{ submission.assignment.lesson.module.course.title }} · оценка: {{ submission.score|default_if_none:"-" }}/{{ submission.assignment.max_score }}</p>
+                                <p class="meta">Ответ ученика:</p>
+                                <p>{{ submission.answer_text|default:"Ответ текстом не указан." }}</p>
                                 {% if submission.feedback %}<p>Комментарий: {{ submission.feedback }}</p>{% endif %}
                                 <div class="teacher-resource-actions">
-                                    {% if submission.file %}<a href="{{ submission.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file.url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="file">Файл</a>{% endif %}
-                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ submission.file_url }}" data-preview-title="{{ submission.assignment.title }}" data-preview-kind="link">Ссылка</a>{% endif %}
+                                    {% if submission.file %}<a href="{{ submission.file.url }}" download>Файл ученика</a>{% endif %}
+                                    {% if submission.file_url %}<a href="{{ submission.file_url }}" target="_blank" rel="noopener">Ссылка ученика</a>{% endif %}
                                 </div>
                             </div>
                         {% empty %}
@@ -125,7 +128,7 @@
         {% else %}
             <section class="teacher-split-grid">
                 <article class="card teacher-panel">
-                    <h2>В процессе</h2>
+                    <h2>Не завершено</h2>
                     <div class="teacher-list">
                         {% for attempt in unchecked_attempts %}
                             <div class="teacher-list-item">
@@ -139,13 +142,43 @@
                 </article>
 
                 <article class="card teacher-panel">
-                    <h2>Проверено</h2>
+                    <h2>Автоматически проверено</h2>
                     <div class="teacher-list">
                         {% for attempt in checked_attempts %}
                             <div class="teacher-list-item">
                                 <strong>{{ attempt.test.title }}</strong>
                                 <p class="meta">{{ attempt.student }} · {{ attempt.test.lesson.module.course.title }} · {{ attempt.get_status_display }} · {{ attempt.score }}%</p>
                                 <small>{{ attempt.finished_at|date:"d.m.Y H:i" }}</small>
+                                <div class="teacher-test-answer-list">
+                                    {% for student_answer in attempt.student_answers.all %}
+                                        <div class="teacher-test-answer">
+                                            <p><strong>{{ student_answer.question.sort_order }}. {{ student_answer.question.question_text }}</strong></p>
+                                            <p class="meta">
+                                                Ответ ученика:
+                                                {% if student_answer.answer %}
+                                                    {{ student_answer.answer.answer_text }}
+                                                {% elif student_answer.text_answer %}
+                                                    {{ student_answer.text_answer }}
+                                                {% else %}
+                                                    не указан
+                                                {% endif %}
+                                            </p>
+                                            <p class="meta">
+                                                Правильный ответ:
+                                                {% for answer in student_answer.question.answers.all %}
+                                                    {% if answer.is_correct %}{{ answer.answer_text }}{% endif %}
+                                                {% endfor %}
+                                            </p>
+                                            {% if student_answer.answer and student_answer.answer.is_correct %}
+                                                <span class="teacher-answer-status is-correct">Верно</span>
+                                            {% else %}
+                                                <span class="teacher-answer-status is-wrong">Неверно</span>
+                                            {% endif %}
+                                        </div>
+                                    {% empty %}
+                                        <p class="meta">Ответы ученика не сохранены.</p>
+                                    {% endfor %}
+                                </div>
                             </div>
                         {% empty %}
                             <p class="meta">Завершенных тестов нет.</p>

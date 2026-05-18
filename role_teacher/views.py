@@ -396,6 +396,7 @@ def submissions(request):
         TestAttempt.objects
         .filter(test__lesson__module__course__in=teacher_courses(user))
         .select_related("student", "test", "test__lesson", "test__lesson__module", "test__lesson__module__course")
+        .prefetch_related("student_answers__answer", "student_answers__question__answers")
         .order_by("-finished_at", "-started_at")
         .distinct()
     )
@@ -454,7 +455,24 @@ def content(request):
 
     if request.method == "POST":
         action = request.POST.get("action")
-        lesson = get_object_or_404(teacher_lessons(user), pk=request.POST.get("lesson"))
+        lesson_required_actions = {
+            "create_material",
+            "update_material",
+            "delete_material",
+            "create_assignment",
+            "update_assignment",
+            "delete_assignment",
+            "create_test",
+            "update_test",
+            "delete_test",
+            "reply_comment",
+        }
+        lesson = None
+        if action in lesson_required_actions:
+            lesson_id = request.POST.get("lesson", "")
+            lesson = teacher_lessons(user).filter(pk=lesson_id).first() if str(lesson_id).isdigit() else None
+            if not lesson:
+                return content_redirect(request, error="Выберите занятие.")
         if action == "create_material":
             file = request.FILES.get("file")
             file_url = request.POST.get("file_url", "").strip()
@@ -535,22 +553,58 @@ def content(request):
         elif action == "delete_assignment":
             get_object_or_404(teacher_assignments(user), pk=request.POST.get("assignment_id"), lesson=lesson).delete()
         elif action == "create_test":
+            try:
+                passing_score = min(100, max(1, int(request.POST.get("passing_score") or 70)))
+            except ValueError:
+                passing_score = 70
+            try:
+                max_attempts = max(1, int(request.POST.get("max_attempts") or 1))
+            except ValueError:
+                max_attempts = 1
+            question_texts = request.POST.getlist("questions") or [request.POST.get("question", "")]
+            correct_answers = request.POST.getlist("correct_answers") or [request.POST.get("correct_answer", "")]
+            wrong_answers = request.POST.getlist("wrong_answers") or [request.POST.get("wrong_answer", "")]
+            question_scores = request.POST.getlist("question_scores")
+            prepared_questions = []
+            for index, question_text in enumerate(question_texts):
+                question_text = question_text.strip()
+                correct_answer = correct_answers[index].strip() if index < len(correct_answers) else ""
+                wrong_answer = wrong_answers[index].strip() if index < len(wrong_answers) else ""
+                if not question_text and not correct_answer and not wrong_answer:
+                    continue
+                if not question_text or not correct_answer or not wrong_answer:
+                    return content_redirect(request, error="Заполните вопрос, верный и неверный ответ для каждого вопроса.")
+                try:
+                    question_score = max(1, int(question_scores[index])) if index < len(question_scores) else 1
+                except ValueError:
+                    question_score = 1
+                prepared_questions.append(
+                    {
+                        "text": question_text,
+                        "correct_answer": correct_answer,
+                        "wrong_answer": wrong_answer,
+                        "score": question_score,
+                    }
+                )
+            if not prepared_questions:
+                return content_redirect(request, error="Добавьте хотя бы один вопрос к тесту.")
             test = Test.objects.create(
                 lesson=lesson,
                 title=request.POST.get("title", "").strip(),
                 description=request.POST.get("description", "").strip(),
-                passing_score=70,
-                max_attempts=2,
+                passing_score=passing_score,
+                max_attempts=max_attempts,
             )
-            question = TestQuestion.objects.create(
-                test=test,
-                question_text=request.POST.get("question", "").strip() or "Контрольный вопрос",
-                question_type=TestQuestion.QuestionType.SINGLE,
-                score=100,
-                sort_order=1,
-            )
-            TestAnswer.objects.create(question=question, answer_text=request.POST.get("correct_answer", "").strip() or "Верно", is_correct=True)
-            TestAnswer.objects.create(question=question, answer_text=request.POST.get("wrong_answer", "").strip() or "Неверно", is_correct=False)
+            for index, question_data in enumerate(prepared_questions, start=1):
+                question = TestQuestion.objects.create(
+                    test=test,
+                    question_text=question_data["text"],
+                    question_type=TestQuestion.QuestionType.SINGLE,
+                    score=question_data["score"],
+                    sort_order=index,
+                )
+                TestAnswer.objects.create(question=question, answer_text=question_data["correct_answer"], is_correct=True)
+                TestAnswer.objects.create(question=question, answer_text=question_data["wrong_answer"], is_correct=False)
         elif action == "update_test":
             test = get_object_or_404(teacher_tests(user), pk=request.POST.get("test_id"), lesson=lesson)
             try:
@@ -626,6 +680,11 @@ def content(request):
         )
     if selected_module:
         lessons = lessons.filter(module=selected_module)
+    available_lessons = teacher_lessons(user).prefetch_related("materials", "assignments", "tests", "comments__user")
+    if selected_course:
+        available_lessons = available_lessons.filter(module__course=selected_course)
+    if selected_module:
+        available_lessons = available_lessons.filter(module=selected_module)
 
     materials = filter_lesson_content(
         teacher_materials(user).select_related("lesson", "lesson__module", "lesson__module__course"),
@@ -674,6 +733,7 @@ def content(request):
             "courses": courses,
             "modules": modules,
             "lessons": lessons,
+            "available_lessons": available_lessons,
             "selected_course": selected_course,
             "selected_module": selected_module,
             "selected_lesson": selected_lesson,

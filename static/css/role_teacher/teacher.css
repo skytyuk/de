@@ -228,6 +228,70 @@
     font-size: 18px;
 }
 
+.teacher-question-list {
+    display: grid;
+    gap: 12px;
+}
+
+.teacher-question-block {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-strong);
+}
+
+.teacher-question-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.teacher-question-head h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.teacher-test-answer-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.teacher-test-answer {
+    display: grid;
+    gap: 5px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-strong);
+}
+
+.teacher-test-answer p {
+    margin: 0;
+}
+
+.teacher-answer-status {
+    justify-self: start;
+    min-height: 26px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.teacher-answer-status.is-correct {
+    background: rgba(34, 197, 94, 0.13);
+    color: #15803d;
+}
+
+.teacher-answer-status.is-wrong {
+    background: rgba(239, 68, 68, 0.13);
+    color: #b91c1c;
+}
+
 .teacher-row-actions {
     justify-content: flex-end;
 }

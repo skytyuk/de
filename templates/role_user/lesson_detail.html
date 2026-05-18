@@ -56,10 +56,10 @@
                                 <p class="course-description">{{ material.description|default:"Нет информации." }}</p>
                                 <div class="lesson-resource-actions">
                                     {% if material.file %}
-                                        <a href="{{ material.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file.url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>
+                                        <a href="{{ material.file.url }}" download>{{ material.get_material_type_display }}</a>
                                     {% endif %}
                                     {% if material.file_url %}
-                                        <a href="{{ material.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ material.file_url }}" data-preview-title="{{ material.title }}" data-preview-kind="{{ material.material_type }}">{{ material.get_material_type_display }}</a>
+                                        <a href="{{ material.file_url }}" target="_blank" rel="noopener">{{ material.get_material_type_display }}</a>
                                     {% endif %}
                                 </div>
                             </article>
@@ -81,10 +81,10 @@
 
                                 <div class="lesson-resource-actions">
                                     {% if assignment.file %}
-                                        <a href="{{ assignment.file.url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file.url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="file">Файл задания</a>
+                                        <a href="{{ assignment.file.url }}" download>Файл</a>
                                     {% endif %}
                                     {% if assignment.file_url %}
-                                        <a href="{{ assignment.file_url }}" target="_blank" rel="noopener" data-resource-preview data-preview-url="{{ assignment.file_url }}" data-preview-title="{{ assignment.title }}" data-preview-kind="link">Ссылка задания</a>
+                                        <a href="{{ assignment.file_url }}" target="_blank" rel="noopener">Ссылка</a>
                                     {% endif %}
                                 </div>
 
